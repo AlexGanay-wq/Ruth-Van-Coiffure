@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruth Van Coiffure — Espace professionnel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #181512;
+    --bg-alt: #1F1B16;
+    --line: rgba(217, 184, 114, 0.16);
+    --gold: #D9B872;
+    --gold-bright: #EAD49A;
+    --cream: #F3ECDF;
+    --cream-dim: rgba(243, 236, 223, 0.62);
+    --bronze: #8A6F50;
+    --font-display: 'Fraunces', serif;
+    --font-body: 'Inter', -apple-system, sans-serif;
+    --container: 760px;
+  }
+  *{ box-sizing: border-box; margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    color: var(--cream);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top, rgba(217,184,114,0.06), transparent 55%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 3px);
+  }
+  .wrap{ max-width: var(--container); margin: 0 auto; padding: 0 24px; }
+
+  header.top{
+    border-bottom: 1px solid var(--line);
+    padding: 22px 0;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  header.top .logo{
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    letter-spacing: 0.1em;
+    color: var(--gold-bright);
+  }
+  header.top .logo span{ color: var(--cream-dim); font-style: italic; font-weight: 300; }
+  .btn{
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    background: transparent;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    padding: 10px 22px;
+    cursor:pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .btn:hover{ background: var(--gold); color: var(--bg); }
+  .btn.primary{ background: var(--gold); color: var(--bg); }
+  .btn.primary:hover{ background: var(--gold-bright); }
+  .btn:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  /* ---- Login ---- */
+  .login-screen{
+    min-height: calc(100vh - 80px);
+    display:flex; align-items:center; justify-content:center;
+    padding: 40px 24px;
+  }
+  .login-card{
+    max-width: 380px; width:100%;
+    border: 1px solid var(--line);
+    background: var(--bg-alt);
+    padding: 36px;
+  }
+  .login-card h1{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 1.6rem;
+    margin-bottom: 6px;
+    text-align:center;
+  }
+  .login-card p.sub{
+    text-align:center;
+    color: var(--cream-dim);
+    font-style: italic;
+    margin-bottom: 26px;
+    font-size: 0.95rem;
+  }
+  .field{ margin-bottom: 16px; }
+  .field label{
+    display:block; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--cream-dim); margin-bottom: 8px;
+  }
+  .field input{
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    color: var(--cream);
+    padding: 12px 14px;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+  }
+  .field input:focus{ outline:none; border-color: var(--gold); }
+  .login-card .btn{ width:100%; padding: 13px 0; margin-top: 6px; }
+  .form-error{
+    color: #E0A38C; font-size: 0.85rem; margin-bottom: 14px;
+    display:none; text-align:center;
+  }
+  .form-error.show{ display:block; }
+
+  /* ---- Dashboard ---- */
+  .dashboard{ padding: 40px 0 70px; display:none; }
+  .dashboard.show{ display:block; }
+  .dash-head{ margin-bottom: 32px; }
+  .dash-head h1{
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 2rem;
+    margin-bottom: 6px;
+  }
+  .dash-head p{ color: var(--cream-dim); font-style: italic; font-size: 0.95rem; }
+
+  .day-group{ margin-bottom: 30px; }
+  .day-group h2{
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--gold-bright);
+    font-size: 1.15rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+  }
+  .booking-card{
+    border: 1px solid var(--line);
+    background: var(--bg-alt);
+    padding: 16px 20px;
+    margin-bottom: 8px;
+    display:flex; align-items:center; justify-content:space-between; gap: 16px;
+    flex-wrap: wrap;
+  }
+  .booking-card.past{ opacity: 0.45; }
+  .booking-main{ display:flex; align-items:baseline; gap: 18px; flex-wrap:wrap; }
+  .booking-time{
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--gold-bright);
+    min-width: 64px;
+  }
+  .booking-info .name{ font-weight: 600; }
+  .booking-info .detail{ color: var(--cream-dim); font-size: 0.9rem; }
+  .booking-actions .btn{ font-size: 0.72rem; padding: 8px 16px; }
+  .booking-actions .btn.danger{ border-color: var(--bronze); color: var(--bronze); }
+  .booking-actions .btn.danger:hover{ background: var(--bronze); color: var(--bg); }
+
+  .empty-state, .loading-state{
+    text-align:center; padding: 60px 0; color: var(--cream-dim); font-style: italic;
+  }
+
+  @media (max-width: 560px){
+    .login-screen{ min-height: auto; padding: 60px 16px; }
+    .booking-card{ flex-direction:column; align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+    <div class="logo">Ruth Van <span>— Espace pro</span></div>
+    <button class="btn" id="logoutBtn" style="display:none;">Se déconnecter</button>
+  </div>
+</header>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <h1>Connexion</h1>
+    <p class="sub">Espace réservé à Ruth Van Coiffure</p>
+    <div class="form-error" id="loginError">Adresse e-mail ou mot de passe incorrect.</div>
+    <div class="field">
+      <label for="email">Adresse e-mail</label>
+      <input type="email" id="email" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="password">Mot de passe</label>
+      <input type="password" id="password" autocomplete="current-password">
+    </div>
+    <button class="btn primary" id="loginBtn">Se connecter</button>
+  </div>
+</div>
+
+<div class="dashboard" id="dashboard">
+  <div class="wrap">
+    <div class="dash-head">
+      <h1>Mes rendez-vous</h1>
+      <p id="dashSub">Chargement…</p>
+    </div>
+    <div id="bookingsList"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import {
+    getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  import {
+    getFirestore, collection, getDocs, doc, deleteDoc
+  } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  var firebaseConfig = {
+    apiKey: "AIzaSyC0Qy46EaqvacGKkW0BSvG41wJAqo5R_cM",
+    authDomain: "ruth-van-coiffure.firebaseapp.com",
+    projectId: "ruth-van-coiffure",
+    storageBucket: "ruth-van-coiffure.firebasestorage.app",
+    messagingSenderId: "756030288159",
+    appId: "1:756030288159:web:da59e1afa174284a93402a"
+  };
+
+  var app = initializeApp(firebaseConfig);
+  var auth = getAuth(app);
+  var db = getFirestore(app);
+
+  var DAY_NAMES = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var MONTH_NAMES = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+  var loginScreen = document.getElementById('loginScreen');
+  var dashboard = document.getElementById('dashboard');
+  var logoutBtn = document.getElementById('logoutBtn');
+  var loginBtn = document.getElementById('loginBtn');
+  var loginError = document.getElementById('loginError');
+  var bookingsList = document.getElementById('bookingsList');
+  var dashSub = document.getElementById('dashSub');
+
+  function formatDateLong(iso){
+    var parts = iso.split('-');
+    var d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+    return DAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' ' + MONTH_NAMES[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  function todayIso(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+
+  loginBtn.addEventListener('click', function(){
+    var email = document.getElementById('email').value.trim();
+    var password = document.getElementById('password').value;
+    loginError.classList.remove('show');
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Connexion…';
+    signInWithEmailAndPassword(auth, email, password).catch(function(){
+      loginError.classList.add('show');
+    }).finally(function(){
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Se connecter';
+    });
+  });
+
+  logoutBtn.addEventListener('click', function(){
+    signOut(auth);
+  });
+
+  onAuthStateChanged(auth, function(user){
+    if(user){
+      loginScreen.style.display = 'none';
+      dashboard.classList.add('show');
+      logoutBtn.style.display = '';
+      loadBookings();
+    } else {
+      loginScreen.style.display = 'flex';
+      dashboard.classList.remove('show');
+      logoutBtn.style.display = 'none';
+    }
+  });
+
+  function loadBookings(){
+    dashSub.textContent = 'Chargement…';
+    bookingsList.innerHTML = '';
+    getDocs(collection(db, 'bookings')).then(function(snapshot){
+      var items = [];
+      snapshot.forEach(function(docSnap){
+        var data = docSnap.data();
+        items.push({ id: docSnap.id, date: data.date, time: data.time, nom: data.nom, telephone: data.telephone, prestation: data.prestation });
+      });
+      items.sort(function(a,b){
+        var ka = a.date + '_' + a.time, kb = b.date + '_' + b.time;
+        return ka < kb ? -1 : (ka > kb ? 1 : 0);
+      });
+      renderBookings(items);
+    }).catch(function(){
+      dashSub.textContent = '';
+      bookingsList.innerHTML = '<div class="empty-state">Impossible de charger les rendez-vous. Réessayez.</div>';
+    });
+  }
+
+  function renderBookings(items){
+    if(items.length === 0){
+      dashSub.textContent = 'Aucun rendez-vous enregistré.';
+      bookingsList.innerHTML = '<div class="empty-state">Le carnet est vide pour le moment.</div>';
+      return;
+    }
+    dashSub.textContent = items.length + ' rendez-vous au total.';
+    var today = todayIso();
+    var groups = {};
+    var order = [];
+    items.forEach(function(item){
+      if(!groups[item.date]){ groups[item.date] = []; order.push(item.date); }
+      groups[item.date].push(item);
+    });
+    bookingsList.innerHTML = '';
+    order.forEach(function(date){
+      var group = document.createElement('div');
+      group.className = 'day-group';
+      var h2 = document.createElement('h2');
+      h2.textContent = formatDateLong(date);
+      group.appendChild(h2);
+      groups[date].forEach(function(item){
+        var card = document.createElement('div');
+        card.className = 'booking-card' + (date < today ? ' past' : '');
+        card.innerHTML =
+          '<div class="booking-main">' +
+            '<div class="booking-time">' + item.time + '</div>' +
+            '<div class="booking-info">' +
+              '<div class="name">' + escapeHtml(item.nom) + '</div>' +
+              '<div class="detail">' + escapeHtml(item.prestation) + ' · ' + escapeHtml(item.telephone) + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="booking-actions"><button class="btn danger" type="button">Annuler</button></div>';
+        card.querySelector('.btn.danger').addEventListener('click', function(){
+          cancelBooking(item.id, card);
+        });
+        group.appendChild(card);
+      });
+      bookingsList.appendChild(group);
+    });
+  }
+
+  function cancelBooking(slotId, cardEl){
+    if(!window.confirm('Annuler ce rendez-vous et libérer le créneau ?')) return;
+    Promise.all([
+      deleteDoc(doc(db, 'bookings', slotId)),
+      deleteDoc(doc(db, 'availability', slotId))
+    ]).then(function(){
+      loadBookings();
+    }).catch(function(){
+      window.alert('La suppression a échoué. Réessayez.');
+    });
+  }
+
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+</script>
+
+</body>
+</html>
