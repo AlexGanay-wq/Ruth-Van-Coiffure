@@ -19,6 +19,7 @@ import { valider, FORMULAIRE } from '../src/settings/schema.js';
 import { Annonceur, lireLesFrappes } from '../src/transport/presence.js';
 import { laPorte, identifiant } from '../src/security/gate.js';
 import { h, remplir, icone, creerAnnonceur } from '../ui/dom.js';
+import { jouerDecoupe } from '../ui/decoupe.js';
 
 // ── L'état de l'app ────────────────────────────────────────────────────────
 
@@ -460,9 +461,10 @@ function rendreRond(msg, rang, etat, range) {
  */
 function rendreDeuxMots(msg, rang) {
   const zone = h('div', { class: 'deux-mots' });
-  const choix = [
-    {
-      cle: 'daccord',
+  const choix = [];
+
+  if (reglages.rondDaccord) {
+    choix.push({
       texte: 'd’accord',
       ic: icone('coche', { 'stroke-width': 3 }),
       classe: '',
@@ -472,9 +474,11 @@ function rendreDeuxMots(msg, rang) {
         deposerReponse('texte', 'd’accord');
         ouvertsDeuxMots.clear();
       },
-    },
-    {
-      cle: 'bientot',
+    });
+  }
+
+  if (reglages.rondPromesse) {
+    choix.push({
       texte: 'je te réponds bientôt',
       ic: icone('sablier', { 'stroke-width': 2.2 }),
       classe: ' ambre',
@@ -495,8 +499,27 @@ function rendreDeuxMots(msg, rang) {
         rendre();
         dire(`Promesse posée au ${nommerRang(rang)}.`);
       },
-    },
-  ];
+    });
+  }
+
+  // La troisième porte : quand aucun des deux mots ne convient — « Et tu
+  // arrives vers quelle heure ? » — on ouvre la rangée du passage. L'app ne
+  // devine pas quelles phrases acceptent « d'accord » ; elle offre la sortie.
+  if (reglages.rondRepondre) {
+    choix.push({
+      texte: 'Répondre',
+      ic: icone('retour', { 'stroke-width': 2.2 }),
+      classe: ' sobre',
+      faire: (ev) => {
+        if (!laPorte(ev).ouvre) return;
+        composeur.toucherPassage(msg.id, rang);
+        ouvertsDeuxMots.clear();
+        rendre();
+        refs.champ?.focus();
+        dire(`Réponse au ${nommerRang(rang)}.`);
+      },
+    });
+  }
 
   choix.forEach((c, i) => {
     const bouton = h('button', { class: `mot${c.classe}`, 'on:click': c.faire }, [c.ic, c.texte]);
@@ -1086,6 +1109,46 @@ document.getElementById('bouton-peau').addEventListener('click', () => {
 
 construireLeFil();
 rendre();
+
+// Un message de Testeur arrive, et se découpe selon le réglage.
+const MESSAGES_A_VENIR = [
+  ['Pour dimanche, on part vers dix heures.', 'J’ai réservé la table du fond.', 'Tu peux prévenir ta sœur ?'],
+  ['Le plombier passe mardi matin.', 'Il faut quelqu’un à la maison.', 'Tu es là, ou je m’arrange ?', 'Et on lui laisse la clé où ?'],
+  ['J’ai trouvé le cadeau.', 'On partage à trois ?'],
+];
+let indexMessage = 0;
+
+async function arriveeDunMessage() {
+  const passages = MESSAGES_A_VENIR[indexMessage % MESSAGES_A_VENIR.length];
+  indexMessage++;
+  const id = `arrive${indexMessage}`;
+  const maintenant = new Date();
+  messages.set(id, {
+    id,
+    voix: 'texte',
+    auteurId: LUI,
+    heure: `${maintenant.getHours()}:${String(maintenant.getMinutes()).padStart(2, '0')}`,
+    passages: passages.map((texte) => ({ debut: 0, fin: 0, texte })),
+  });
+  rendre();
+
+  const position = [...messages.keys()].indexOf(id);
+  const bloc = $fil.querySelectorAll('.msg')[position];
+  if (!bloc) return;
+  bloc.scrollIntoView({ block: 'end', behavior: moteur.calme ? 'auto' : 'smooth' });
+
+  if (reglages.decoupe === 'goutte') {
+    // L'animation de l'app, non reproduite ici : le message apparaît, c'est tout.
+    dire(`Message de Testeur, ${passages.length} passages. La goutte est l’animation de l’app ; elle n’est pas reproduite dans cette démonstration.`);
+    return;
+  }
+  dire(`Message de Testeur, ${passages.length} passages.`);
+  await jouerDecoupe(moteur, bloc, reglages.decoupe);
+}
+
+document.getElementById('bouton-message')?.addEventListener('click', () => {
+  arriveeDunMessage();
+});
 
 // Une frappe de Testeur, pour montrer la ligne de l'idée 1.
 document.getElementById('bouton-frappe').addEventListener('click', () => {

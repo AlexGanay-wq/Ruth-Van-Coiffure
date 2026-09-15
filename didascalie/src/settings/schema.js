@@ -37,6 +37,10 @@ import { ALLURES } from '../motion/presets.js';
  * @property {number} fenetreCorrectionMs
  * @property {boolean} annonceCompacte
  * @property {boolean} reprendreApresReponse
+ * @property {boolean} rondDaccord
+ * @property {boolean} rondPromesse
+ * @property {boolean} rondRepondre
+ * @property {string} decoupe
  * @property {string} allure
  * @property {number} intensiteAnimation
  * @property {boolean} suivreLeSysteme
@@ -58,7 +62,27 @@ export const DEFAUTS = Object.freeze({
   /** Reprendre la lecture au passage suivant après avoir posé une réponse. */
   reprendreApresReponse: true,
 
+  // ── Ce que le rond ouvre ────────────────────────────────────────────────
+  // Le rond n'envoie jamais rien tout seul (idée 2, règle 4) : il ouvre des
+  // portes. Lesquelles, c'est un choix — au moins une reste toujours ouverte.
+  /** « d'accord » — ferme un passage simple en deux gestes. */
+  rondDaccord: true,
+  /** « je te réponds bientôt » — la promesse, qui marche sur n'importe quel passage. */
+  rondPromesse: true,
+  /**
+   * « Répondre » — ouvre la rangée du passage, pour les phrases où aucun des
+   * deux mots ne convient (« Et tu arrives vers quelle heure ? »). C'est la
+   * sortie du cas limite sans que l'app ait à deviner quoi que ce soit.
+   */
+  rondRepondre: true,
+
   // ── Animation ───────────────────────────────────────────────────────────
+  /**
+   * Ce qui coupe un message en passages quand il arrive. `goutte` est
+   * l'animation de l'app, celle qui existe ; les autres sont des alternatives
+   * au choix. Ne change jamais où va une réponse.
+   */
+  decoupe: 'goutte',
   allure: 'didascalie',
   intensiteAnimation: 1,
   /** Suivre « animations réduites » du système. Vrai par défaut, et ça se respecte. */
@@ -69,6 +93,16 @@ export const DEFAUTS = Object.freeze({
 });
 
 const VOIX = new Set(['ecrire', 'parler', 'filmer', 'joindre']);
+
+/** Les découpes proposées. La première est celle de l'app. */
+export const DECOUPES = Object.freeze([
+  { id: 'goutte', nom: 'La goutte', note: 'L’animation de l’app : quelque chose tombe, et le bloc se coupe.', defaut: true },
+  { id: 'didascalie', nom: 'La didascalie', note: 'Une indication de scène s’écrit entre les phrases, et les écarte.' },
+  { id: 'point', nom: 'Le point devient le rond', note: 'Le point final de chaque phrase va dans la marge et s’ouvre en rond.' },
+  { id: 'respiration', nom: 'La respiration', note: 'Une voix lit ; le bloc se coupe là où elle reprend son souffle.' },
+  { id: 'adresse', nom: 'L’adresse', note: 'Chaque passage est nommé en naissant ; le nom se replie dans le rond.' },
+]);
+const IDS_DECOUPES = new Set(DECOUPES.map((d) => d.id));
 const GRACES = [0, 1000, 1500, 3000];
 const FENETRES = [0, 5000, 10000, 20000];
 
@@ -99,12 +133,32 @@ export function valider(brut) {
     annonceCompacte: o.annonceCompacte === true,
     reprendreApresReponse: o.reprendreApresReponse !== false,
 
+    ...portesDuRond(o),
+    decoupe: IDS_DECOUPES.has(o.decoupe) ? o.decoupe : DEFAUTS.decoupe,
+
     allure: Object.prototype.hasOwnProperty.call(ALLURES, o.allure) ? o.allure : DEFAUTS.allure,
     intensiteAnimation: bornerIntensite(o.intensiteAnimation),
     suivreLeSysteme: o.suivreLeSysteme !== false,
 
     version: DEFAUTS.version,
   });
+}
+
+/**
+ * Les trois portes du rond. Si quelqu'un les ferme toutes — par un réglage
+ * abîmé ou par jeu — le rond redeviendrait un bouton qui ne fait rien, ce que
+ * la planche appelle « un journal intime ». On rouvre alors les trois.
+ */
+function portesDuRond(o) {
+  const portes = {
+    rondDaccord: o.rondDaccord !== false,
+    rondPromesse: o.rondPromesse !== false,
+    rondRepondre: o.rondRepondre !== false,
+  };
+  if (!portes.rondDaccord && !portes.rondPromesse && !portes.rondRepondre) {
+    return { rondDaccord: true, rondPromesse: true, rondRepondre: true };
+  }
+  return portes;
 }
 
 function bornerIntensite(v) {
@@ -178,6 +232,27 @@ export const FORMULAIRE = Object.freeze([
         ],
       },
       {
+        cle: 'rondDaccord',
+        libelle: 'Le rond ouvre « d’accord »',
+        note: 'Ferme un passage simple en deux gestes.',
+        bascule: true,
+        groupe: 'Ce que le rond ouvre',
+      },
+      {
+        cle: 'rondPromesse',
+        libelle: 'Le rond ouvre « je te réponds bientôt »',
+        note: 'La promesse — elle marche sur n’importe quel passage.',
+        bascule: true,
+        groupe: 'Ce que le rond ouvre',
+      },
+      {
+        cle: 'rondRepondre',
+        libelle: 'Le rond ouvre « Répondre »',
+        note: 'La rangée du passage, pour les phrases où aucun des deux mots ne convient. Au moins une des trois portes reste toujours ouverte.',
+        bascule: true,
+        groupe: 'Ce que le rond ouvre',
+      },
+      {
         cle: 'annonceCompacte',
         libelle: 'Annonce courte',
         note: '« ↩ 2ᵉ passage » au lieu de la phrase entière. L’adresse est toujours annoncée.',
@@ -195,6 +270,12 @@ export const FORMULAIRE = Object.freeze([
     titre: 'Animation',
     note: 'Ce que vous voyez bouger. Ne change jamais où va une réponse.',
     champs: [
+      {
+        cle: 'decoupe',
+        libelle: 'La découpe d’un message',
+        note: 'Ce qui sépare un message en passages quand il arrive. « La goutte » est l’animation de l’app.',
+        options: DECOUPES.map((d) => ({ valeur: d.id, nom: d.nom, note: d.note, defaut: d.defaut })),
+      },
       {
         cle: 'allure',
         libelle: 'Allure',

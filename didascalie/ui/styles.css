@@ -209,6 +209,8 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--sauge)
   will-change: transform, opacity;
 }
 .mot.ambre { border-color: var(--ambre-trait); background: var(--ambre-doux); color: var(--ambre-encre); }
+/* « Répondre » n'est pas un mot qu'on dit : c'est une porte vers la rangée. Neutre, donc. */
+.mot.sobre { border-color: var(--trait); background: var(--carte); color: var(--encre); }
 .mot svg { width: 12px; height: 12px; flex-shrink: 0; }
 
 /* ── Le vocal ──────────────────────────────────────────────────────────── */
@@ -464,3 +466,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--sauge)
 }
 .essai .cible { width: 34px; height: 34px; border-radius: 10px; background: var(--sauge-doux); border: 1.5px solid var(--sauge); flex-shrink: 0; will-change: transform, opacity; }
 .essai button { font-size: 12.5px; font-weight: 600; color: var(--sauge-encre); text-decoration: underline; min-height: 40px; }
+
+/* ── Les découpes (ui/decoupe.js) — éléments transitoires ──────────────── */
+/* Tous sont ajoutés le temps du geste, puis retirés. Aucun ne prend de place
+   dans la mise en page : absolus, sans événements, animés en transform/opacity. */
+.dsc-dida { position: absolute; left: 34px; font-family: var(--serif); font-style: italic; font-size: 11px; line-height: 1; color: var(--sauge-encre); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+.dsc-vol { position: absolute; left: 0; top: 10px; width: 21px; height: 21px; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; will-change: transform, opacity; }
+.dsc-vol i { display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--sauge-encre); }
+.dsc-guide { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.dsc-guide i { position: absolute; top: 0; bottom: 0; left: 0; width: 60%; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--sauge) 22%, transparent) 45%, transparent); transform: translateX(-100%); opacity: 0; will-change: transform, opacity; }
+.dsc-souffle { position: absolute; right: -15px; top: 11px; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--sauge); opacity: 0; pointer-events: none; will-change: transform, opacity; }
+.dsc-adr { position: absolute; left: -1px; top: 6px; width: 22px; text-align: center; font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 26px; color: var(--sauge-encre); opacity: 0; pointer-events: none; will-change: transform, opacity; transform-origin: center; }

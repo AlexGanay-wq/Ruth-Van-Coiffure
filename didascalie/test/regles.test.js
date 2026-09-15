@@ -466,6 +466,27 @@ describe('Réglages et animation', () => {
     }
   });
 
+  test('le rond a trois portes, toutes ouvertes par défaut', () => {
+    const r = valider({});
+    assert.deepEqual([r.rondDaccord, r.rondPromesse, r.rondRepondre], [true, true, true]);
+  });
+
+  test('fermer les trois portes du rond les rouvre toutes', () => {
+    const r = valider({ rondDaccord: false, rondPromesse: false, rondRepondre: false });
+    assert.deepEqual([r.rondDaccord, r.rondPromesse, r.rondRepondre], [true, true, true]);
+  });
+
+  test('on peut ne garder qu’une porte', () => {
+    const r = valider({ rondDaccord: false, rondPromesse: false });
+    assert.deepEqual([r.rondDaccord, r.rondPromesse, r.rondRepondre], [false, false, true]);
+  });
+
+  test('la goutte est la découpe par défaut, et une découpe inconnue y retombe', () => {
+    assert.equal(valider({}).decoupe, 'goutte');
+    assert.equal(valider({ decoupe: 'pirate' }).decoupe, 'goutte');
+    assert.equal(valider({ decoupe: 'respiration' }).decoupe, 'respiration');
+  });
+
   test('les cinq allures sont proposées, « Aucune » comprise', () => {
     assert.deepEqual(Object.keys(ALLURES), ['didascalie', 'sobre', 'ample', 'papier', 'aucune']);
   });
