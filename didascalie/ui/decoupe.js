@@ -3,14 +3,15 @@
  *
  * Un message arrive d'un bloc, et devient des passages. **La goutte**, qui est
  * l'animation de l'app, n'est pas ici : elle vit dans le code de Didascalie et
- * reste la valeur par défaut du réglage. Ce module ne joue que les quatre
- * alternatives, quand quelqu'un en a choisi une dans les réglages.
+ * reste la valeur par défaut du réglage. Ce module ne joue que les deux
+ * alternatives retenues le 15 septembre, quand quelqu'un en a choisi une dans
+ * les réglages : le point qui devient le rond, et la respiration.
  *
- * Toutes ont une **cause** — la chose qui coupe, rendue visible — et toutes
+ * Toutes deux ont une **cause** — la chose qui coupe, rendue visible — et
  * respectent la règle du moteur : rien ne remet en page. Les passages sont
  * déjà posés à leur place ; l'animation part d'un décalage et le rejoint.
- * Les éléments transitoires (l'indication de scène, le point qui vole, la
- * lueur, le rang) sont ajoutés le temps du geste, puis retirés.
+ * Les éléments transitoires (le point qui vole, la lueur, le souffle) sont
+ * ajoutés le temps du geste, puis retirés.
  *
  * @module ui/decoupe
  */
@@ -26,7 +27,7 @@ const ECART = 6;
  *
  * @param {import('../src/motion/engine.js').Moteur} moteur
  * @param {Element} msgEl le bloc `.msg`, avec ses `.passage`
- * @param {string} nom `didascalie` | `point` | `respiration` | `adresse` — tout autre nom ne joue rien
+ * @param {string} nom `point` | `respiration` — tout autre nom (la goutte comprise) ne joue rien ici
  * @returns {Promise<void>} résolue quand tout est fini et nettoyé
  */
 export async function jouerDecoupe(moteur, msgEl, nom) {
@@ -42,7 +43,7 @@ export async function jouerDecoupe(moteur, msgEl, nom) {
   const u = Math.max(120, a.durees.ample);
   const ressort = a.courbes.ressort;
   const entree = a.courbes.entree;
-  await fabrique({ msgEl, rangs, u, ressort, entree });
+  await fabrique({ rangs, u, ressort, entree });
 }
 
 // ── Outils ────────────────────────────────────────────────────────────────
@@ -60,9 +61,6 @@ const ferme = (i) => `translateY(${-ECART * i}px)`;
 const rond = (rang) => rang.querySelector('.rond');
 const bulle = (rang) => rang.querySelector('.bulle');
 
-/** « 1ᵉʳ », « 2ᵉ » — le rang, en court. */
-const rangCourt = (i) => (i === 0 ? '1ᵉʳ' : `${i + 1}ᵉ`);
-
 /** Un rond qui naît : de rien à sa taille, à l'instant `debut` du geste. */
 function rondNait(el, D, debut, ressort) {
   if (!el) return Promise.resolve();
@@ -74,56 +72,9 @@ function rondNait(el, D, debut, ressort) {
   ], { duration: D, easing: ressort });
 }
 
-// ── Les quatre causes ─────────────────────────────────────────────────────
+// ── Les deux causes retenues ──────────────────────────────────────────────
 
 const FABRIQUES = {
-  /**
-   * La didascalie — une indication de scène s'écrit entre les phrases.
-   *
-   * Au théâtre, la didascalie est ce qui s'écrit entre deux répliques :
-   * *(un temps)*. Ici elle apparaît entre deux passages, écarte le bloc pour se
-   * faire une place, puis s'efface. La coupe reste ; l'indication a fait son
-   * travail. C'est le nom de l'app, rendu visible une fois par message.
-   */
-  async didascalie({ msgEl, rangs, u, ressort }) {
-    const D = Math.round(u * 4.4);
-    const positionAvant = msgEl.style.position;
-    msgEl.style.position = 'relative';
-
-    const didas = rangs.slice(1).map((suivant, k) => {
-      const el = /** @type {HTMLElement} */ (h('i', { class: 'dsc-dida', 'aria-hidden': 'true', texte: '(un temps)' }));
-      el.style.top = `${/** @type {HTMLElement} */ (suivant).offsetTop - 2}px`;
-      el.style.transform = `translateY(${12 * k}px)`;
-      msgEl.appendChild(el);
-      return el;
-    });
-
-    const travaux = [];
-    rangs.forEach((rang, i) => {
-      travaux.push(anim(rang, 'dida-passage', [
-        { transform: ferme(i), offset: 0 },
-        { transform: ferme(i), offset: 0.3 },
-        { transform: `translateY(${12 * i}px)`, offset: 0.52 },
-        { transform: 'translateY(0)', offset: 1 },
-      ], { duration: D, easing: 'cubic-bezier(.2,.8,.2,1)' }));
-      travaux.push(rondNait(rond(rang), D, 0.6, ressort));
-    });
-    didas.forEach((d, k) => {
-      travaux.push(anim(d, 'dida-mot', [
-        { opacity: 0, transform: `translateY(${12 * k}px)`, offset: 0 },
-        { opacity: 0, transform: `translateY(${12 * k}px)`, offset: 0.3 },
-        { opacity: 1, transform: `translateY(${12 * k}px)`, offset: 0.42 },
-        { opacity: 1, transform: `translateY(${12 * k}px)`, offset: 0.64 },
-        { opacity: 0, transform: `translateY(${12 * k}px)`, offset: 0.84 },
-        { opacity: 0, transform: `translateY(${12 * k}px)`, offset: 1 },
-      ], { duration: D, easing: 'ease-out' }));
-    });
-
-    await Promise.all(travaux);
-    didas.forEach((d) => d.remove());
-    msgEl.style.position = positionAvant;
-  },
-
   /**
    * Le point devient le rond — la ponctuation qui finit la phrase quitte sa place.
    *
@@ -251,49 +202,4 @@ const FABRIQUES = {
     transitoires.forEach((t) => t.remove());
   },
 
-  /**
-   * L'adresse — chaque passage est nommé au moment où il naît.
-   *
-   * Dans la marge, un rang s'écrit en italique — 1ᵉʳ, 2ᵉ, 3ᵉ — et le passage se
-   * détache sous lui. Puis le rang se replie dans le rond, qui le garde sans le
-   * montrer. L'idée 1 dit qu'une réponse annonce son adresse ; cette découpe
-   * fait la même chose en sens inverse : le message distribue ses adresses.
-   */
-  async adresse({ rangs, u, ressort }) {
-    const D = Math.round(u * 3.5);
-    const pas = Math.round(u * 0.76);
-    const adrs = [];
-    const travaux = [];
-
-    rangs.forEach((rang, i) => {
-      const adr = h('i', { class: 'dsc-adr', 'aria-hidden': 'true', texte: rangCourt(i) });
-      rang.appendChild(adr);
-      adrs.push(adr);
-      const delay = i * pas;
-
-      travaux.push(anim(adr, 'adr-mot', [
-        { opacity: 0, transform: 'translateX(-10px) scale(1.7)', offset: 0 },
-        { opacity: 1, transform: 'translateX(0) scale(1.15)', offset: 0.22 },
-        { opacity: 1, transform: 'translateX(0) scale(1)', offset: 0.5 },
-        { opacity: 0, transform: 'translateX(0) scale(.35)', offset: 0.78 },
-        { opacity: 0, transform: 'translateX(0) scale(.35)', offset: 1 },
-      ], { duration: D, delay, easing: 'cubic-bezier(.2,.8,.2,1)' }));
-
-      travaux.push(anim(rond(rang), 'adr-rond', [
-        { opacity: 0, transform: 'scale(.4)', offset: 0 },
-        { opacity: 0, transform: 'scale(.4)', offset: 0.52 },
-        { opacity: 1, transform: 'scale(1.06)', offset: 0.74 },
-        { opacity: 1, transform: 'scale(1)', offset: 1 },
-      ], { duration: D, delay, easing: ressort }));
-
-      travaux.push(anim(rang, 'adr-passage', [
-        { transform: ferme(i), offset: 0 },
-        { transform: ferme(i), offset: 0.4 },
-        { transform: 'translateY(0)', offset: 1 },
-      ], { duration: D, delay, easing: 'cubic-bezier(.2,.8,.2,1)' }));
-    });
-
-    await Promise.all(travaux);
-    adrs.forEach((x) => x.remove());
-  },
 };

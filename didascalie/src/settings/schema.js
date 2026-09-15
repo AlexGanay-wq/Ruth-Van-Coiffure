@@ -94,13 +94,15 @@ export const DEFAUTS = Object.freeze({
 
 const VOIX = new Set(['ecrire', 'parler', 'filmer', 'joindre']);
 
-/** Les découpes proposées. La première est celle de l'app. */
+/**
+ * Les découpes proposées. La première est celle de l'app ; les deux autres ont
+ * été retenues le 15 septembre parmi quatre — chacune avec une cause tirée de
+ * l'app : le point final qui devient le rond, la voix qui reprend son souffle.
+ */
 export const DECOUPES = Object.freeze([
   { id: 'goutte', nom: 'La goutte', note: 'L’animation de l’app : quelque chose tombe, et le bloc se coupe.', defaut: true },
-  { id: 'didascalie', nom: 'La didascalie', note: 'Une indication de scène s’écrit entre les phrases, et les écarte.' },
   { id: 'point', nom: 'Le point devient le rond', note: 'Le point final de chaque phrase va dans la marge et s’ouvre en rond.' },
   { id: 'respiration', nom: 'La respiration', note: 'Une voix lit ; le bloc se coupe là où elle reprend son souffle.' },
-  { id: 'adresse', nom: 'L’adresse', note: 'Chaque passage est nommé en naissant ; le nom se replie dans le rond.' },
 ]);
 const IDS_DECOUPES = new Set(DECOUPES.map((d) => d.id));
 const GRACES = [0, 1000, 1500, 3000];

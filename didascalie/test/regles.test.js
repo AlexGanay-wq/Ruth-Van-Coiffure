@@ -485,6 +485,10 @@ describe('Réglages et animation', () => {
     assert.equal(valider({}).decoupe, 'goutte');
     assert.equal(valider({ decoupe: 'pirate' }).decoupe, 'goutte');
     assert.equal(valider({ decoupe: 'respiration' }).decoupe, 'respiration');
+    assert.equal(valider({ decoupe: 'point' }).decoupe, 'point');
+    // Écartées le 15 septembre : elles retombent sur la goutte, sans casser.
+    assert.equal(valider({ decoupe: 'didascalie' }).decoupe, 'goutte');
+    assert.equal(valider({ decoupe: 'adresse' }).decoupe, 'goutte');
   });
 
   test('les cinq allures sont proposées, « Aucune » comprise', () => {
