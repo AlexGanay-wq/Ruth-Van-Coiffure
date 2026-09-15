@@ -102,3 +102,13 @@ dérobée pour ce qui est sorti par la porte.
 Voir [`INTEGRATION.md`](./INTEGRATION.md) pour brancher tout ça sur l'app
 réelle, et pour les quatre questions que la passation demandait de poser au
 code.
+
+## Passation du 15 septembre au soir
+
+L'accès au vrai dépôt (`AlexGanay-wq/messagerie-app`) est rétabli. **Deux
+choses d'ici sont déjà dans l'app, en ligne** : la découpe en réglage (la
+goutte par défaut, « Le point tombe », « La respiration ») et les deux mots sous
+un passage (« d'accord », « je te réponds bientôt », un interrupteur chacun ;
+« Répondre » y est la place elle-même). Le rond, l'adresse de la ligne de
+frappe et la pause-réponse restent ici, prêts. L'état exact, ce qui
+correspond à quoi et ce qui reste : [`INTEGRATION.md`, section 5](./INTEGRATION.md#5-laccès-au-dépôt--levé-le-15-septembre-et-ce-qui-est-passé-dans-lapp).

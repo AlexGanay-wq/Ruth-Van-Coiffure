@@ -190,21 +190,50 @@ livre pas, et qu'il faudra écrire contre votre code :
 
 ---
 
-## 5. L'accès au dépôt
+## 5. L'accès au dépôt — levé le 15 septembre, et ce qui est passé dans l'app
 
-Il n'a toujours pas été possible de pousser quoi que ce soit : GitHub refuse
-l'écriture sur `AlexGanay-wq/Ruth-Van-Coiffure` (403), et aucun dépôt
-Didascalie n'est visible depuis cette session. C'est le même mur que le
-14 septembre.
+Le mur du 14 septembre est tombé le 15 : l'app Claude a été installée sur les
+dépôts (« All repositories »), et **`AlexGanay-wq/messagerie-app`** — le vrai
+code de Didascalie — a été attaché à la session. Ce qui suit a donc été
+**branché dans l'app**, pas seulement décrit, et mis en ligne le soir même sur
+la ligne d'Alexandre (« Déploie ce qui peut l'être ») : branche
+`claude/goutte-fluidite`, fusionnée en avance rapide dans `main` (= Vercel).
 
-Pour le lever, au choix :
+### Ce qui est dans l'app maintenant (main, 15/09 au soir)
 
-- un administrateur installe l'app Claude sur l'organisation —
-  <https://github.com/apps/claude/installations/select_target> ;
-- ou reconnecter GitHub depuis les réglages de claude.ai —
-  <https://claude.ai/customize/connectors?auth_start=github&auth_start_force=1>.
+| Ici (prototype) | Là-bas (`messagerie-app`) |
+|---|---|
+| `settings/schema.js` → `decoupe` : goutte · point · respiration | `src/decoupeAnim.js` (plans WAAPI purs) + réglage « Comment un message se découpe » (Réglages › Ce que je vois), `localStorage dida_decoupe`, **la goutte par défaut et intacte** |
+| `ui/decoupe.js` → le point qui devient le rond, la respiration | les mêmes causes, traduites : l'app n'a **pas de rond**, le point tombe donc **dans la couture** et s'y dissout ; la lueur et le souffle sont identiques |
+| `rondDaccord` / `rondPromesse` / `rondRepondre` (les trois portes du rond) | `src/portes.js` : « d'accord » et « je te réponds bientôt » **sous la place ouverte**, un interrupteur chacun ; « Répondre » **est la place** (elle s'ouvre déjà en touchant la phrase) et ne se règle pas |
+| la règle « rien ne remet en page » (`motion/engine.js`, `verifier`) | la goutte réécrite en translations et échelles : 82 remises en page → 2, positions identiques au centième ; `test-decoupeAnim.mjs` refuse toute propriété de mise en page |
 
-Et surtout : **attacher le dépôt de Didascalie à la session**. Tant qu'il ne
-l'est pas, chaque tour repart de zéro — ce dossier est conçu pour que celui-ci
-soit le dernier à avoir ce problème, puisque le code existe désormais
-indépendamment de lui.
+Le détail, les mesures et les leçons sont dans `NOTES-CLAUDE.md` de
+`messagerie-app` (les deux sections du 15/09, et la passation en tête).
+
+### Ce qui reste ici, et n'est pas encore dans l'app
+
+- **Le rond à trois états** (idée 2) et tout ce qui en dépend : le registre
+  (`model/ring.js`), la ligne du bas, le bilan par auteur.
+- **L'adresse de la ligne de frappe** (idée 1) : `address/composer.js`,
+  `transport/presence.js`, l'annonce compacte.
+- **La pause est la réponse** (idée 3) : `rangVise` avec la grâce d'une seconde
+  et demie, le plancher, la fenêtre de correction.
+- **Les vignettes vidéo** à la place de « 3 passages · touchez pour répondre ».
+- Les quatre questions de la section 1 restent à poser au code de l'app avant
+  de brancher le rond ; la réponse à la première (« une réponse porte-t-elle
+  son rang ? ») est **oui** — `onInlineCutReply(m.id, segTexts, drafts, media)`
+  envoie les textes par rang de passage — ce qui rend le registre
+  branchable en une journée, comme prévu.
+
+### Pour reprendre sur une autre machine
+
+```
+git clone https://github.com/AlexGanay-wq/Ruth-Van-Coiffure   # branche claude/dazzling-archimedes-dnls5a
+cd Ruth-Van-Coiffure/didascalie && npm test && npm run typecheck && npm run demo
+```
+
+La démo publiée reste à <https://claude.ai/artifact/SKL4FHJxtjwwXGHMtG6SjS>.
+Ce dossier a vocation à être déposé **dans** `messagerie-app` (dossier
+`didascalie/` ou fusion module par module) quand le rond sera branché ; d'ici
+là il vit ici, et rien de l'app ne dépend de lui.
