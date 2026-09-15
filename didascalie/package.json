@@ -1,0 +1,21 @@
+{
+  "name": "@didascalie/inline",
+  "version": "0.1.0",
+  "description": "Le cœur de Didascalie : répondre à un passage précis d'un message — écrit, parlé ou filmé.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "private": true,
+  "exports": {
+    ".": "./src/index.js",
+    "./ui": "./ui/dom.js",
+    "./styles.css": "./ui/styles.css"
+  },
+  "files": ["src", "ui"],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\"",
+    "typecheck": "tsc -p jsconfig.json",
+    "demo": "npx http-server .. -p 8099 -o /didascalie/demo/"
+  },
+  "sideEffects": false,
+  "engines": { "node": ">=20" }
+}

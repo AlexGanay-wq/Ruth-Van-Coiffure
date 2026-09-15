@@ -1,0 +1,466 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Didascalie — les réponses inline
+   Peau jour / nuit, et une règle tenue partout : ce qui s'allume s'allume
+   sur une couche à part, pour que rien ne bouge sous le pouce.
+   ───────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --sol: #EDE7DA;
+  --papier: #F6F2E9;
+  --carte: #FFFDF7;
+  --bulle: #FFFDF7;
+  --moi: #5C4632;
+  --moi-txt: #F6F2E9;
+  --encre: #26262E;
+  --gris: #6B6455;
+  --trait: #DCD5C3;
+  --sauge: #5A7A5E;
+  --sauge-doux: #EDF3EE;
+  --sauge-encre: #455E48;
+  --ambre: #B4762A;
+  --ambre-doux: #FFF7EA;
+  --ambre-trait: #E8CFA4;
+  --ambre-encre: #84571F;
+  --rouge: #A3402F;
+  --sur-sauge: #FFFFFF;
+  --ombre: 0 3px 8px rgba(92, 70, 50, .10), 0 10px 26px rgba(92, 70, 50, .10);
+  --serif: "Libre Caslon Text", Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: light;
+}
+
+:root[data-peau="nuit"] {
+  --sol: #0A0A11;
+  --papier: #101018;
+  --carte: #1C1C2B;
+  --bulle: #20202F;
+  --moi: #F2F0EA;
+  --moi-txt: #101018;
+  --encre: #F2F0EA;
+  --gris: #93929F;
+  --trait: #2A2A3C;
+  --sauge: #8FB093;
+  --sauge-doux: #1E2A21;
+  --sauge-encre: #A6C4A9;
+  --ambre: #E8B563;
+  --ambre-doux: #2A2415;
+  --ambre-trait: #5C4A22;
+  --ambre-encre: #E8B563;
+  --rouge: #E08C7A;
+  --sur-sauge: #101018;
+  --ombre: 0 3px 10px rgba(0, 0, 0, .42), 0 10px 28px rgba(0, 0, 0, .30);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--sol);
+  color: var(--encre);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dsc-sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--sauge); outline-offset: 2px; border-radius: 6px; }
+
+/* ── L'appareil ────────────────────────────────────────────────────────── */
+
+.app {
+  max-width: 460px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--papier);
+  position: relative;
+}
+
+.entete {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 16px 10px;
+  border-bottom: 1px solid var(--trait);
+  background: var(--papier);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.entete .av { width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(150deg, #8A6142, #C2A184); flex-shrink: 0; }
+.entete .qui { flex: 1; min-width: 0; }
+.entete .nom { font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.2; }
+.entete .sous { font-size: 11px; color: var(--gris); }
+.entete .outil { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--trait); background: var(--carte); flex-shrink: 0; }
+.entete .outil svg { width: 17px; height: 17px; }
+
+/* ── Le fil ────────────────────────────────────────────────────────────── */
+
+.fil {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 12px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) { .fil { scroll-behavior: auto; } }
+
+.jour { align-self: center; font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--gris); margin: 4px 0; }
+.auteur { font-size: 11px; color: var(--gris); margin-left: 4px; }
+
+.msg { display: flex; flex-direction: column; gap: 6px; }
+
+/* ── Le passage, et son rond ───────────────────────────────────────────── */
+
+.passage { display: flex; gap: 9px; align-items: flex-start; position: relative; }
+.passage > .corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.passage.range { opacity: .45; }
+
+.bulle {
+  position: relative;
+  max-width: 88%;
+  align-self: flex-start;
+  background: var(--bulle);
+  border: 1px solid var(--trait);
+  border-radius: 5px 13px 13px 13px;
+  padding: 9px 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  text-align: left;
+  width: auto;
+  display: block;
+}
+.bulle.moi { align-self: flex-end; background: var(--moi); color: var(--moi-txt); border-color: transparent; border-radius: 13px 5px 13px 13px; }
+
+/* Le halo : une couche par-dessus, jamais la bulle elle-même.
+   Rien dans la mise en page ne change quand il apparaît — c'est la règle 5
+   de l'idée 1, et c'est pour ça qu'il vit dans un ::after. */
+.bulle::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  border: 2px solid var(--sauge);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+.bulle.vise::after { opacity: 1; }
+.bulle.vise-ambre::after { border-color: var(--ambre); }
+
+.rond {
+  width: 21px; height: 21px;
+  border-radius: 50%;
+  border: 1.5px solid var(--sauge);
+  flex-shrink: 0;
+  margin-top: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  background: transparent;
+  position: relative;
+  transition: border-color .18s, background-color .18s;
+}
+.rond svg { width: 12px; height: 12px; }
+.rond .disque {
+  position: absolute; inset: -1.5px;
+  border-radius: 50%;
+  background: var(--sauge);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.rond.repondu { border-color: var(--sauge); color: var(--sur-sauge); }
+.rond.repondu .disque { opacity: 1; }
+.rond.repondu svg { position: relative; z-index: 1; }
+.rond.promis { border-color: var(--ambre); background: var(--ambre-doux); color: var(--ambre-encre); }
+.rond.range { border-style: dashed; border-color: var(--gris); opacity: .45; }
+.rond[disabled] { cursor: default; }
+
+/* Les deux mots que le rond ouvre */
+.deux-mots { display: flex; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
+.mot {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600;
+  padding: 7px 13px;
+  min-height: 38px;
+  border-radius: 999px;
+  border: 1.5px solid var(--sauge);
+  background: var(--sauge-doux);
+  color: var(--sauge-encre);
+  will-change: transform, opacity;
+}
+.mot.ambre { border-color: var(--ambre-trait); background: var(--ambre-doux); color: var(--ambre-encre); }
+.mot svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+/* ── Le vocal ──────────────────────────────────────────────────────────── */
+
+.media-titre { font-size: 11px; font-weight: 700; color: var(--sauge-encre); letter-spacing: .02em; }
+.media-titre span { font-weight: 400; color: var(--gris); }
+
+.rail { display: flex; flex-direction: column; gap: 6px; margin-top: 7px; }
+.segment {
+  display: flex; align-items: center; gap: 9px;
+  border: 1.5px solid var(--trait);
+  border-radius: 11px;
+  padding: 7px 10px;
+  position: relative;
+  overflow: hidden;
+  min-height: 44px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+}
+.segment .jauge {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: var(--sauge-doux);
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--jauge, 0));
+  z-index: 0;
+  will-change: transform;
+}
+.segment > *:not(.jauge) { position: relative; z-index: 1; }
+.segment.en-cours { border-color: var(--sauge); }
+.segment.lu { opacity: .55; }
+.segment .bouton-lire {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--sauge-doux);
+  border: 1px solid var(--sauge);
+  color: var(--sauge-encre);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.segment .bouton-lire svg { width: 11px; height: 11px; }
+.segment .tt { font-size: 10.5px; color: var(--gris); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.onde { display: flex; align-items: center; gap: 2px; height: 20px; flex: 1; min-width: 0; overflow: hidden; }
+.onde i { display: block; width: 3px; border-radius: 2px; background: var(--gris); opacity: .45; flex-shrink: 0; }
+.segment.en-cours .onde i { background: var(--sauge); opacity: .85; }
+
+/* ── La vidéo — les vignettes (la dette du 9 septembre) ────────────────── */
+
+.vignettes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 7px; }
+.vignette {
+  aspect-ratio: 9 / 11;
+  border-radius: 9px;
+  border: 1.5px solid var(--trait);
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  padding: 0;
+}
+.vignette .im { position: absolute; inset: 0; }
+.vignette.en-cours { border-color: var(--sauge); }
+.vignette.lu { opacity: .55; }
+.vignette .tt {
+  position: absolute; left: 5px; bottom: 5px;
+  font-size: 9.5px;
+  background: rgba(0, 0, 0, .62);
+  padding: 1px 5px; border-radius: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.vignette .pl {
+  position: absolute; left: 50%; top: 44%;
+  transform: translate(-50%, -50%);
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(255, 255, 255, .9);
+  color: #101018;
+  display: flex; align-items: center; justify-content: center;
+}
+.vignette .pl svg { width: 10px; height: 10px; }
+.vignette .jg { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255, 255, 255, .3); }
+.vignette .jg i { display: block; height: 100%; background: var(--sauge); width: 100%; transform-origin: left; transform: scaleX(var(--jauge, 0)); }
+
+/* ── La réponse accrochée ──────────────────────────────────────────────── */
+
+.reponse-accrochee { align-self: flex-end; display: flex; flex-direction: column; gap: 3px; align-items: flex-end; max-width: 88%; will-change: transform, opacity; transform-origin: top right; }
+.connecteur { width: 2px; height: 10px; background: var(--trait); align-self: flex-end; margin-right: 16px; transform-origin: top center; }
+.tampon { font-size: 10.5px; color: var(--gris); text-align: right; }
+.tampon b { color: var(--sauge-encre); font-weight: 700; }
+
+.fenetre { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--gris); }
+.fenetre button { text-decoration: underline; font-size: 10.5px; min-height: 30px; padding: 0 2px; }
+.fenetre .corr { color: var(--ambre-encre); }
+.fenetre .filet { height: 2px; flex: 1; min-width: 26px; background: var(--ambre-trait); transform-origin: left center; border-radius: 2px; }
+
+/* ── La ligne du bas ───────────────────────────────────────────────────── */
+
+.reste {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: var(--ambre-doux);
+  border: 1px solid var(--ambre-trait);
+  color: var(--ambre-encre);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.reste button { margin-left: auto; text-decoration: underline; font-size: 12px; flex-shrink: 0; min-height: 32px; }
+
+.bilan { font-size: 11px; font-style: italic; color: var(--gris); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pt { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.pt.s { background: var(--sauge); }
+.pt.a { background: var(--ambre); }
+
+/* ── Le composeur ──────────────────────────────────────────────────────── */
+
+.barre {
+  flex-shrink: 0;
+  border-top: 1px solid var(--trait);
+  background: var(--papier);
+  padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+
+.frappe { font-size: 12.5px; font-style: italic; color: var(--gris); min-height: 18px; padding-left: 2px; }
+
+.annonce {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--sauge-encre);
+  background: var(--sauge-doux);
+  border: 1px solid var(--sauge);
+  border-radius: 11px;
+  padding: 8px 11px;
+  min-height: 40px;
+  width: 100%;
+  text-align: left;
+  will-change: transform, opacity;
+}
+.annonce .sortie { margin-left: auto; font-size: 11px; text-decoration: underline; flex-shrink: 0; opacity: .85; }
+.annonce.enregistre { color: #fff; background: #C0453B; border-color: #C0453B; }
+.annonce .battement { width: 8px; height: 8px; border-radius: 50%; background: #fff; flex-shrink: 0; animation: battre 1.1s ease-in-out infinite; }
+@keyframes battre { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .annonce .battement { animation: none; } }
+.annonce .chrono { margin-left: auto; font-variant-numeric: tabular-nums; font-weight: 700; flex-shrink: 0; }
+
+.composeur { display: flex; align-items: center; gap: 6px; }
+.composeur .voix {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.composeur .voix svg { width: 17px; height: 17px; }
+.composeur .voix.mise-en-avant { background: var(--sauge-doux); border-color: var(--sauge); color: var(--sauge-encre); }
+.composeur .voix.enregistre { background: #C0453B; border-color: #C0453B; color: #fff; }
+.composeur .champ {
+  flex: 1; min-width: 0; height: 40px;
+  border-radius: 20px;
+  border: 1px solid var(--trait);
+  background: var(--carte);
+  color: var(--encre);
+  padding: 0 14px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.composeur .champ::placeholder { color: var(--gris); }
+
+/* ── Les réglages ──────────────────────────────────────────────────────── */
+
+.voile { position: fixed; inset: 0; background: rgba(0, 0, 0, .34); z-index: 40; }
+.tiroir {
+  position: fixed; left: 50%; bottom: 0;
+  transform: translateX(-50%);
+  width: min(460px, 100%);
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--papier);
+  border-radius: 20px 20px 0 0;
+  z-index: 41;
+  padding: 16px 18px calc(24px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, .3);
+}
+.tiroir h2 { font-family: var(--serif); font-weight: 400; font-size: 22px; margin: 0 0 2px; }
+.tiroir .fermer { position: absolute; right: 14px; top: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--trait); background: var(--carte); display: flex; align-items: center; justify-content: center; }
+.tiroir .fermer svg { width: 15px; height: 15px; }
+
+.groupe { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--trait); }
+.groupe > h3 { font-size: 11px; font-weight: 700; letter-spacing: .11em; text-transform: uppercase; color: var(--gris); margin: 0 0 3px; }
+.groupe > .note { font-size: 12.5px; color: var(--gris); margin: 0 0 14px; }
+
+.champ-reglage { margin-bottom: 18px; }
+.champ-reglage > .lib { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.champ-reglage > .note { font-size: 12px; color: var(--gris); margin: 0 0 9px; line-height: 1.4; }
+
+.options { display: flex; flex-direction: column; gap: 7px; }
+.option {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 11px 13px;
+  border-radius: 12px;
+  border: 1.5px solid var(--trait);
+  background: var(--carte);
+  text-align: left;
+  width: 100%;
+}
+.option.choisie { border-color: var(--sauge); background: var(--sauge-doux); }
+.option .puce {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 1.5px solid var(--gris);
+  flex-shrink: 0; margin-top: 2px;
+  display: flex; align-items: center; justify-content: center;
+}
+.option.choisie .puce { border-color: var(--sauge); }
+.option.choisie .puce::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--sauge); }
+.option .cx { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.option .nm { font-size: 13.5px; font-weight: 600; }
+.option .nt { font-size: 12px; color: var(--gris); line-height: 1.4; margin-top: 1px; }
+
+.options.rangee { flex-direction: row; flex-wrap: wrap; gap: 7px; }
+.options.rangee .option { width: auto; flex: 0 0 auto; padding: 8px 14px; min-height: 42px; align-items: center; }
+.options.rangee .option .puce { display: none; }
+
+.bascule { display: flex; align-items: center; gap: 12px; width: 100%; padding: 4px 0; text-align: left; min-height: 44px; }
+.bascule .cx { flex: 1; min-width: 0; }
+.bascule .piste {
+  width: 46px; height: 28px; border-radius: 999px;
+  background: var(--trait);
+  flex-shrink: 0;
+  position: relative;
+  transition: background-color .18s;
+}
+.bascule .piste i { position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--carte); box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: transform .18s; }
+.bascule.on .piste { background: var(--sauge); }
+.bascule.on .piste i { transform: translateX(18px); }
+@media (prefers-reduced-motion: reduce) { .bascule .piste, .bascule .piste i { transition: none; } }
+
+.curseur { width: 100%; accent-color: var(--sauge); height: 32px; }
+.valeur { font-size: 12px; color: var(--sauge-encre); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.essai {
+  margin-top: 10px;
+  padding: 13px;
+  border-radius: 12px;
+  border: 1px dashed var(--trait);
+  background: var(--carte);
+  display: flex; align-items: center; gap: 11px;
+}
+.essai .cible { width: 34px; height: 34px; border-radius: 10px; background: var(--sauge-doux); border: 1.5px solid var(--sauge); flex-shrink: 0; will-change: transform, opacity; }
+.essai button { font-size: 12.5px; font-weight: 600; color: var(--sauge-encre); text-decoration: underline; min-height: 40px; }
