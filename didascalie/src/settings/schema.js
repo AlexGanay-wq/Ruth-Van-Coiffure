@@ -103,8 +103,32 @@ export const DECOUPES = Object.freeze([
   { id: 'goutte', nom: 'La goutte', note: 'L’animation de l’app : quelque chose tombe, et le bloc se coupe.', defaut: true },
   { id: 'point', nom: 'Le point devient le rond', note: 'Le point final de chaque phrase va dans la marge et s’ouvre en rond.' },
   { id: 'respiration', nom: 'La respiration', note: 'Une voix lit ; le bloc se coupe là où elle reprend son souffle.' },
+  { id: 'silence', nom: 'Le silence s’écarte', note: 'L’écart s’ouvre sans rupture, là où la voix s’est tue — et sur un vocal, il dit combien de temps.' },
 ]);
 const IDS_DECOUPES = new Set(DECOUPES.map((d) => d.id));
+
+/** Les trois matières qu'un message peut avoir. */
+export const MATIERES = Object.freeze(['texte', 'vocal', 'video']);
+
+/**
+ * La découpe **réellement jouée** dans une matière : celle qu'on a choisie, ou
+ * sa traduction quand elle n'a rien à dire là.
+ *
+ * Mesuré dans l'app le 15 septembre : sur un vocal, « Le point devient le rond »
+ * faisait partir un point de nulle part — il n'y a pas de ponctuation dans un
+ * son. Une animation dit quelque chose, donc elle peut mentir. Ce qui coupe un
+ * vocal ou une vidéo, c'est le silence : le point y devient donc le silence.
+ * La goutte et la respiration disent vrai partout et ne sont jamais traduites.
+ *
+ * @param {string} nom la découpe choisie dans les réglages
+ * @param {string} matiere `texte` | `vocal` | `video`
+ * @returns {string}
+ */
+export function dialecte(nom, matiere) {
+  const d = IDS_DECOUPES.has(nom) ? nom : DEFAUTS.decoupe;
+  if (matiere === 'texte' || !MATIERES.includes(matiere)) return d;
+  return d === 'point' ? 'silence' : d;
+}
 const GRACES = [0, 1000, 1500, 3000];
 const FENETRES = [0, 5000, 10000, 20000];
 

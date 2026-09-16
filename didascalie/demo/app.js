@@ -75,10 +75,11 @@ function construireLeFil() {
       auteurId: LUI,
       heure: '11:49',
       duree: 41,
+      // `silence` : la pause qui a fait naître le passage, mesurée à l'envoi.
       passages: [
         { debut: 0, fin: 14 },
-        { debut: 14, fin: 28 },
-        { debut: 28, fin: 41 },
+        { debut: 14, fin: 28, silence: 0.9 },
+        { debut: 28, fin: 41, silence: 1.4 },
       ],
     },
     {
@@ -89,8 +90,8 @@ function construireLeFil() {
       duree: 19,
       passages: [
         { debut: 0, fin: 6 },
-        { debut: 6, fin: 13 },
-        { debut: 13, fin: 19 },
+        { debut: 6, fin: 13, silence: 1.1 },
+        { debut: 13, fin: 19, silence: 0.7 },
       ],
     },
   ]) {
@@ -352,40 +353,45 @@ function rendreMessage(msg) {
       bloc.appendChild(rendrePassageTexte(msg, r, avecRonds));
     }
   } else {
+    // Un média porte ses passages, leurs ronds et leurs réponses lui-même :
+    // la même silhouette que pour un texte, dans sa matière.
     bloc.appendChild(rendreMedia(msg));
-    for (let r = 0; r < n; r++) {
-      for (const rep of reponses.filter((x) => x.messageId === msg.id && x.rang === r)) {
-        bloc.appendChild(rendreReponse(rep, msg));
-      }
-    }
   }
 
   // Le bilan que l'auteur voit sur son propre message — ici, pour la
   // démonstration, on le montre sous le message de Testeur.
   const bilan = registre.bilanAuteur(msg.id, n, [MOI]);
   if (avecRonds && bilan.repondus + bilan.promis > 0) {
+    // Un fait, jamais un reproche — et jamais « 0 passage a une réponse » :
+    // quand il n'y a que des promesses, on ne compte que les promesses.
+    const pluriel = (k) => (k > 1 ? 's' : '');
     bloc.appendChild(
       h('div', { class: 'bilan' }, [
-        h('span', { class: 'pt s' }),
-        `${bilan.repondus} passage${bilan.repondus > 1 ? 's' : ''} sur ${bilan.total} ${bilan.repondus > 1 ? 'ont' : 'a'} une réponse`,
+        bilan.repondus > 0 ? h('span', { class: 'pt s' }) : null,
+        bilan.repondus > 0
+          ? `${bilan.repondus} passage${pluriel(bilan.repondus)} sur ${bilan.total} ${bilan.repondus > 1 ? 'ont' : 'a'} une réponse`
+          : null,
         bilan.promis > 0 ? h('span', { class: 'pt a' }) : null,
-        bilan.promis > 0 ? `${bilan.promis} promis` : null,
+        bilan.promis > 0
+          ? (bilan.repondus > 0 ? `${bilan.promis} promis` : `${bilan.promis} passage${pluriel(bilan.promis)} sur ${bilan.total} promis`)
+          : null,
       ]),
     );
   }
   return bloc;
 }
 
-function rendrePassageTexte(msg, rang, avecRonds) {
-  const etat = registre.etat(msg.id, rang, MOI);
-  const range = registre.estRange(msg.id, rang);
+/** Le passage est-il celui que le composeur vise ? */
+function estVise(msg, rang) {
   const adresse = composeur.adresse;
-  const vise = adresse.kind === 'passage' && adresse.messageId === msg.id && adresse.rang === rang;
+  return adresse.kind === 'passage' && adresse.messageId === msg.id && adresse.rang === rang;
+}
 
-  const corps = h('div', { class: 'corps' });
-
+function rendrePassageTexte(msg, rang, avecRonds) {
   const bulle = h('button', {
-    class: `bulle${vise ? ' vise' : ''}`,
+    class: `bulle${estVise(msg, rang) ? ' vise' : ''}`,
+    'data-msg': msg.id,
+    'data-rang': String(rang),
     'aria-label': `${nommerRang(rang)} : ${msg.passages[rang].texte}. Toucher pour répondre.`,
     'on:click': () => {
       composeur.toucherPassage(msg.id, rang);
@@ -393,9 +399,31 @@ function rendrePassageTexte(msg, rang, avecRonds) {
       rendre();
     },
   }, [msg.passages[rang].texte]);
-  corps.appendChild(bulle);
+  return rangeeDePassage(msg, rang, bulle, avecRonds);
+}
 
-  // Les deux mots que le rond ouvre.
+/**
+ * La rangée d'un passage, quelle que soit sa matière : son rond à gauche, puis
+ * la cible (une bulle, une bande de vocal), les mots que le rond a ouverts, et
+ * les réponses accrochées dessous. Une seule silhouette pour les trois
+ * matières — c'est ce qui rend le rond lisible sans légende.
+ *
+ * @param {object} msg
+ * @param {number} rang
+ * @param {Element|null} cible ce qu'on touche pour viser le passage ; null quand la
+ *   cible vit ailleurs (l'image d'une vidéo, dans la rangée du dessus)
+ * @param {boolean} avecRonds
+ * @param {{entete?:Element|null}} [opts] une ligne au-dessus des réponses (« 2ᵉ passage », avec son image)
+ */
+function rangeeDePassage(msg, rang, cible, avecRonds, opts = {}) {
+  const etat = registre.etat(msg.id, rang, MOI);
+  const range = registre.estRange(msg.id, rang);
+
+  const corps = h('div', { class: 'corps' });
+  if (opts.entete) corps.appendChild(opts.entete);
+  if (cible) corps.appendChild(cible);
+
+  // Les mots que le rond ouvre.
   if (ouvertsDeuxMots.has(`${msg.id}|${rang}`) && etat !== Etat.REPONDU) {
     corps.appendChild(rendreDeuxMots(msg, rang));
   }
@@ -529,40 +557,67 @@ function rendreDeuxMots(msg, rang) {
   return zone;
 }
 
+/**
+ * « 3 passages · touche celui auquel répondre » — la même phrase au-dessus des
+ * passages d'un vocal et de la rangée d'une vidéo (sa réponse « C » du 15
+ * septembre). **Une seule copie** : deux littéraux à deux endroits divergent au
+ * premier retour.
+ */
+const phrasePassages = (n) => `${n} passages · touche celui auquel répondre`;
+
 function rendreMedia(msg) {
+  const n = nombreDePassages(msg);
+  const avecRonds = n > 1; // idée 2, règle 7
   const enCours = lecteur.messageId === msg.id;
   const rangEnCours = enCours ? rangSousLaTete(msg) : -1;
 
-  const bulle = h('div', { class: 'bulle', style: '--x' }, []);
-  bulle.classList.remove('vise');
+  const bulle = h('div', { class: 'bulle media' });
+  // Un média d'un seul passage se vise en entier (idée 3, règle 9) : c'est
+  // alors la bulle qui s'allume. À plusieurs passages, c'est le passage.
   const adresse = composeur.adresse;
-  if (adresse.kind === 'passage' && adresse.messageId === msg.id) bulle.classList.add('vise');
+  if (adresse.kind === 'message' && adresse.messageId === msg.id) bulle.classList.add('vise');
 
   const icone_ = msg.voix === 'vocal' ? '🎙️' : '🎬';
-  const etatTexte = enCours
-    ? lecteur.enMarche ? 'en lecture' : 'en pause'
-    : `${msg.passages.length} passages`;
+  // Le titre ne compte pas les passages quand la phrase du dessous le fait déjà :
+  // la même information deux fois, à huit pixels d'écart, c'est du bruit.
+  const etatTexte = enCours ? (lecteur.enMarche ? ' · en lecture' : ' · en pause') : avecRonds ? '' : ' · 1 passage';
   bulle.appendChild(
     h('div', { class: 'media-titre' }, [
       `${icone_} ${msg.voix === 'vocal' ? 'Vocal' : 'Vidéo'} de Testeur `,
-      h('span', { texte: `· ${horloge(msg.duree)} · ${etatTexte}` }),
+      h('span', { texte: `· ${horloge(msg.duree)}${etatTexte}` }),
     ]),
   );
+  if (avecRonds) bulle.appendChild(h('div', { class: 'rangee-titre', texte: phrasePassages(n) }));
 
-  bulle.appendChild(msg.voix === 'vocal' ? rendreRail(msg, rangEnCours) : rendreVignettes(msg, rangEnCours));
+  if (msg.voix === 'vocal') {
+    bulle.appendChild(rendreRail(msg, rangEnCours, avecRonds));
+  } else {
+    bulle.appendChild(rendreVignettes(msg, rangEnCours, avecRonds));
+    const suite = rendreSuiteVideo(msg);
+    if (suite) bulle.appendChild(suite);
+  }
   return bulle;
 }
 
-/** Le vocal : une bande par passage. */
-function rendreRail(msg, rangEnCours) {
+/** Où en est la lecture d'un passage : en cours, déjà entendu, et sa jauge. */
+function lectureDe(msg, p, rangEnCours, r) {
+  const actif = r === rangEnCours;
+  const lu = lecteur.messageId === msg.id && lecteur.position >= p.fin;
+  const jauge = actif ? Math.min(1, Math.max(0, (lecteur.position - p.debut) / (p.fin - p.debut))) : lu ? 1 : 0;
+  return { actif, lu, jauge };
+}
+
+/**
+ * Le vocal : une rangée par passage — son rond, sa bande, ses réponses dessous.
+ * Exactement la silhouette d'un texte, dans la matière du son.
+ */
+function rendreRail(msg, rangEnCours, avecRonds) {
   const rail = h('div', { class: 'rail' });
   msg.passages.forEach((p, r) => {
-    const actif = r === rangEnCours;
-    const lu = lecteur.messageId === msg.id && lecteur.position >= p.fin;
-    const jauge = actif ? Math.min(1, Math.max(0, (lecteur.position - p.debut) / (p.fin - p.debut))) : lu ? 1 : 0;
+    const { actif, lu, jauge } = lectureDe(msg, p, rangEnCours, r);
 
     const seg = h('button', {
-      class: `segment${actif ? ' en-cours' : ''}${lu && !actif ? ' lu' : ''}`,
+      class: `segment${actif ? ' en-cours' : ''}${lu && !actif ? ' lu' : ''}${estVise(msg, r) ? ' vise' : ''}`,
       'data-msg': msg.id,
       'data-rang': String(r),
       'style:--jauge': jauge.toFixed(4),
@@ -574,43 +629,69 @@ function rendreRail(msg, rangEnCours) {
       h('span', { class: 'onde' }, ondes(r, 22)),
       h('span', { class: 'tt', texte: actif && !lecteur.enMarche ? 'en pause' : `${horloge(p.debut)} → ${horloge(p.fin)}` }),
     ]);
-    rail.appendChild(seg);
+    rail.appendChild(rangeeDePassage(msg, r, seg, avecRonds));
   });
   return rail;
 }
 
 /**
- * La vidéo : **trois vignettes**, et non « 3 passages · touchez pour répondre ».
+ * La vidéo : **une rangée d'images**, une par passage, son moment dessous —
+ * comme dans l'app depuis le 15 septembre (sa réponse « B »). Sur une vidéo,
+ * c'est l'image qui dit le contenu, pas une durée. Sous chaque image, son rond.
  *
- * C'est la dette du 9 septembre, celle que la passation met en tête : « on ne
- * marque pas un passage qu'on ne voit pas ». Les idées 2, 3 et 5 la supposent
- * toutes les trois, donc elle passe avant elles.
+ * C'est la dette du 9 septembre, celle que la passation mettait en tête : « on
+ * ne marque pas un passage qu'on ne voit pas ».
  */
-function rendreVignettes(msg, rangEnCours) {
+function rendreVignettes(msg, rangEnCours, avecRonds) {
   const grille = h('div', { class: 'vignettes' });
   msg.passages.forEach((p, r) => {
-    const actif = r === rangEnCours;
-    const lu = lecteur.messageId === msg.id && lecteur.position >= p.fin;
-    const jauge = actif ? Math.min(1, Math.max(0, (lecteur.position - p.debut) / (p.fin - p.debut))) : lu ? 1 : 0;
+    const { actif, lu, jauge } = lectureDe(msg, p, rangEnCours, r);
+    const range = registre.estRange(msg.id, r);
 
-    const v = h('button', {
-      class: `vignette${actif ? ' en-cours' : ''}${lu && !actif ? ' lu' : ''}`,
+    const v = h('div', {
+      class: `vignette${actif ? ' en-cours' : ''}${lu && !actif ? ' lu' : ''}${estVise(msg, r) ? ' vise' : ''}${range ? ' range' : ''}`,
       'data-msg': msg.id,
       'data-rang': String(r),
       'style:--jauge': jauge.toFixed(4),
+    });
+    const cadre = h('button', {
+      class: 'cadre',
       'aria-label': `${nommerRang(r)} de la vidéo, à ${horloge(p.debut)}. Toucher pour le voir et y répondre.`,
       'on:click': () => toucherPassageMedia(msg, r),
     }, [
-      h('span', { class: 'im', 'style:--f': String(r) }),
+      h('span', { class: 'im' }),
       h('span', { class: 'pl' }, [icone(actif && lecteur.enMarche ? 'pause' : 'lire')]),
-      h('span', { class: 'tt', texte: horloge(p.debut) }),
       h('span', { class: 'jg' }, [h('i')]),
     ]);
     // Les « images » de la démonstration : trois dégradés, aucun fichier à charger.
-    v.querySelector('.im').style.background = CADRES[r % CADRES.length];
+    cadre.querySelector('.im').style.background = cadreDe(r);
+    v.appendChild(cadre);
+    v.appendChild(
+      h('div', { class: 'pied' }, [
+        avecRonds ? rendreRond(msg, r, registre.etat(msg.id, r, MOI), range) : null,
+        h('span', { class: 'tt', texte: horloge(p.debut) }),
+      ]),
+    );
     grille.appendChild(v);
   });
   return grille;
+}
+
+/**
+ * Sous la rangée d'une vidéo : les passages qui ont quelque chose dessous —
+ * des mots ouverts par le rond, ou des réponses. Chacun se présente par son
+ * image et son rang, pour qu'on sache à quoi la réponse s'accroche.
+ */
+function rendreSuiteVideo(msg) {
+  const suite = h('div', { class: 'suite-video' });
+  msg.passages.forEach((_p, r) => {
+    const aDesMots = ouvertsDeuxMots.has(`${msg.id}|${r}`) && registre.etat(msg.id, r, MOI) !== Etat.REPONDU;
+    const aDesReponses = reponses.some((x) => x.messageId === msg.id && x.rang === r);
+    if (!aDesMots && !aDesReponses) return;
+    const entete = h('div', { class: 'quel-passage' }, [cadreMini(r), nommerRang(r)]);
+    suite.appendChild(rangeeDePassage(msg, r, null, false, { entete }));
+  });
+  return suite.childElementCount ? suite : null;
 }
 
 const CADRES = [
@@ -618,6 +699,21 @@ const CADRES = [
   'linear-gradient(155deg,#3F6079,#7FA0B6 70%,#CBDCE7)',
   'linear-gradient(155deg,#4A6B4E,#8FB093 70%,#D6E4D7)',
 ];
+const cadreDe = (r) => CADRES[r % CADRES.length];
+
+/** L'image d'un passage filmé, en petit : dans l'annonce, devant ses réponses. */
+function cadreMini(r) {
+  const c = h('span', { class: 'cadre-mini', 'aria-hidden': 'true' });
+  c.style.background = cadreDe(r);
+  return c;
+}
+
+/** L'élément qui représente un passage à l'écran — une bulle, une bande, une image. */
+function cibleDe(msg, rang) {
+  const el = $fil.querySelector(`[data-msg="${CSS.escape(msg.id)}"][data-rang="${rang}"]`);
+  if (!el) return null;
+  return el.classList.contains('vignette') ? el.querySelector('.cadre') : el;
+}
 
 /** Règle 6 : toucher un passage le joue **et** en fait la cible. */
 function toucherPassageMedia(msg, rang) {
@@ -704,12 +800,12 @@ function ligneDuBasPour(msg) {
         if (r < 0) return;
         composeur.toucherPassage(msg.id, r);
         rendre();
-        // Le passage s'allume **une fois**, puis s'éteint.
-        const cible = $fil.querySelectorAll('.msg')[[...messages.keys()].indexOf(msg.id)];
-        const bulle = cible?.querySelectorAll('.bulle')[r];
-        if (bulle) {
-          bulle.scrollIntoView({ block: 'center', behavior: moteur.calme ? 'auto' : 'smooth' });
-          moteur.jouer(bulle, 'anneauUneFois');
+        // Le passage s'allume **une fois**, puis s'éteint — une bulle, une
+        // bande ou une image, selon la matière.
+        const cible = cibleDe(msg, r);
+        if (cible) {
+          cible.scrollIntoView({ block: 'center', behavior: moteur.calme ? 'auto' : 'smooth' });
+          moteur.jouer(cible, 'anneauUneFois');
         }
         dire(`${nommerRang(r)} : sans réponse.`);
       },
@@ -764,17 +860,35 @@ function rendreBarre() {
       ]),
     );
   } else {
-    const texte = texteAnnonce();
-    if (texte) {
+    const a = composeur.annonce({ compacte: reglages.annonceCompacte });
+    if (a) {
+      // L'annonce dit le rang, et **cite** ce qu'elle vise : les premiers mots
+      // d'une phrase, l'image d'un passage filmé. « 2ᵉ passage » est un rang ;
+      // « Pain, vin, fromage. » est une phrase, et c'est à elle qu'on répond.
+      // Deux lignes : le rang, puis ce qu'on cite — les mots d'une phrase, ou
+      // les bornes d'un passage entendu. Le moteur donne une seule phrase ;
+      // c'est l'écran, étroit, qui la plie au point médian.
+      const [tete, ...suite] = a.texte.split(' · ');
+      const citation = a.extrait ? `« ${a.extrait} »` : suite.join(' · ') || null;
+      const contenu = [];
+      if (a.voix === 'video' && a.rang >= 0) contenu.push(cadreMini(a.rang));
+      contenu.push(
+        h('span', { class: 'cx' }, [
+          h('span', { class: 'dit', texte: tete }),
+          citation ? h('span', { class: 'extrait', texte: citation }) : null,
+        ]),
+      );
+      contenu.push(h('span', { class: 'sortie', texte: 'au fil, plutôt' }));
+
       const annonce = h('button', {
         class: 'annonce',
-        'aria-label': `${texte}. Toucher pour revenir au fil.`,
+        'aria-label': `${a.texte}${a.extrait ? ` : « ${a.extrait} »` : ''}. Toucher pour revenir au fil.`,
         'on:click': () => {
           composeur.toucherAnnonce();
           rendre();
           dire('Retour au fil.');
         },
-      }, [h('span', { texte }), h('span', { class: 'sortie', texte: 'au fil, plutôt' })]);
+      }, contenu);
       enfants.push(annonce);
     }
   }
@@ -913,8 +1027,9 @@ function animerLesNouveautes() {
     }
     vus.ronds.set(cle, { el, etat, precedent: etat });
   }
-  // Le halo du passage visé.
-  const vise = $fil.querySelector('.bulle.vise');
+  // Le halo du passage visé — une bulle, une bande, ou l'image d'une vidéo.
+  const viseEl = $fil.querySelector('.bulle.vise, .segment.vise, .vignette.vise');
+  const vise = viseEl && viseEl.classList.contains('vignette') ? viseEl.querySelector('.cadre') : viseEl;
   if (vise && vise !== vus.vise) {
     vus.vise = vise;
     moteur.jouer(vise, 'anneau');
@@ -1110,26 +1225,39 @@ document.getElementById('bouton-peau').addEventListener('click', () => {
 construireLeFil();
 rendre();
 
-// Un message de Testeur arrive, et se découpe selon le réglage.
+// Un message de Testeur arrive — un texte, un vocal, une vidéo, à tour de
+// rôle — et se découpe selon le réglage, dans sa matière.
+const texteDe = (phrases) => ({ voix: 'texte', passages: phrases.map((texte) => ({ debut: 0, fin: 0, texte })) });
 const MESSAGES_A_VENIR = [
-  ['Pour dimanche, on part vers dix heures.', 'J’ai réservé la table du fond.', 'Tu peux prévenir ta sœur ?'],
-  ['Le plombier passe mardi matin.', 'Il faut quelqu’un à la maison.', 'Tu es là, ou je m’arrange ?', 'Et on lui laisse la clé où ?'],
-  ['J’ai trouvé le cadeau.', 'On partage à trois ?'],
+  texteDe(['Pour dimanche, on part vers dix heures.', 'J’ai réservé la table du fond.', 'Tu peux prévenir ta sœur ?']),
+  {
+    voix: 'vocal',
+    duree: 23,
+    passages: [{ debut: 0, fin: 9 }, { debut: 9, fin: 16, silence: 0.9 }, { debut: 16, fin: 23, silence: 1.4 }],
+  },
+  {
+    voix: 'video',
+    duree: 12,
+    passages: [{ debut: 0, fin: 4 }, { debut: 4, fin: 8, silence: 1.1 }, { debut: 8, fin: 12, silence: 0.7 }],
+  },
+  texteDe(['Le plombier passe mardi matin.', 'Il faut quelqu’un à la maison.', 'Tu es là, ou je m’arrange ?', 'Et on lui laisse la clé où ?']),
+  texteDe(['J’ai trouvé le cadeau.', 'On partage à trois ?']),
 ];
+const NOMS_DECOUPES = { point: 'le point devient le rond', respiration: 'la respiration', silence: 'le silence s’écarte' };
 let indexMessage = 0;
 
 async function arriveeDunMessage() {
-  const passages = MESSAGES_A_VENIR[indexMessage % MESSAGES_A_VENIR.length];
+  const modele = MESSAGES_A_VENIR[indexMessage % MESSAGES_A_VENIR.length];
   indexMessage++;
   const id = `arrive${indexMessage}`;
   const maintenant = new Date();
-  messages.set(id, {
+  const msg = {
+    ...modele,
     id,
-    voix: 'texte',
     auteurId: LUI,
     heure: `${maintenant.getHours()}:${String(maintenant.getMinutes()).padStart(2, '0')}`,
-    passages: passages.map((texte) => ({ debut: 0, fin: 0, texte })),
-  });
+  };
+  messages.set(id, msg);
   rendre();
 
   const position = [...messages.keys()].indexOf(id);
@@ -1137,13 +1265,22 @@ async function arriveeDunMessage() {
   if (!bloc) return;
   bloc.scrollIntoView({ block: 'end', behavior: moteur.calme ? 'auto' : 'smooth' });
 
+  const quoi = msg.voix === 'texte' ? 'Message' : msg.voix === 'vocal' ? 'Vocal' : 'Vidéo';
+  const n = msg.passages.length;
   if (reglages.decoupe === 'goutte') {
     // L'animation de l'app, non reproduite ici : le message apparaît, c'est tout.
-    dire(`Message de Testeur, ${passages.length} passages. La goutte est l’animation de l’app ; elle n’est pas reproduite dans cette démonstration.`);
+    dire(`${quoi} de Testeur, ${n} passages. La goutte est l’animation de l’app ; elle n’est pas reproduite dans cette démonstration.`);
     return;
   }
-  dire(`Message de Testeur, ${passages.length} passages.`);
-  await jouerDecoupe(moteur, bloc, reglages.decoupe);
+  // Ce que l'écart a à dire : la pause mesurée à l'envoi, ou rien.
+  const pauses = msg.passages.slice(1).map((p) => p.silence);
+  const joue = await jouerDecoupe(moteur, bloc, reglages.decoupe, { matiere: msg.voix, pauses });
+  if (joue && joue !== reglages.decoupe) {
+    // Une découpe traduite se dit : le point n'a rien à dire dans un son.
+    dire(`${quoi} de Testeur, ${n} passages. « ${NOMS_DECOUPES[reglages.decoupe]} » n’a pas de sens dans un ${msg.voix === 'vocal' ? 'son' : 'film'} : ${NOMS_DECOUPES[joue]}.`);
+  } else {
+    dire(`${quoi} de Testeur, ${n} passages.`);
+  }
 }
 
 document.getElementById('bouton-message')?.addEventListener('click', () => {
@@ -1156,7 +1293,7 @@ document.getElementById('bouton-frappe').addEventListener('click', () => {
     { id: 'f1', personneId: LUI, voix: 'enregistre', messageId: 'texte1', rang: 2, perimeA: Date.now() + 4000 },
   ];
   rendreBarre();
-  const bulle = $fil.querySelectorAll('.msg')[0]?.querySelectorAll('.bulle')[2];
+  const bulle = $fil.querySelector('[data-msg="texte1"][data-rang="2"]');
   if (bulle) {
     bulle.classList.add('vise-ambre', 'vise');
     moteur.jouer(bulle, 'anneau');

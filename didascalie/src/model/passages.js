@@ -17,6 +17,9 @@
  * @property {number} debut   Seconde de début dans le média (0 pour du texte).
  * @property {number} fin     Seconde de fin, exclusive. Pour du texte, fin === debut.
  * @property {string} [texte] Le texte du passage, s'il y en a un.
+ * @property {number} [silence] La pause, en secondes, qui a fait naître ce
+ *   passage — mesurée chez celui qui envoie, et posée sur le passage qui
+ *   **commence** là. Absente sur du texte, et sur les médias d'avant la mesure.
  */
 
 /**
@@ -111,6 +114,31 @@ export function rangSuivant(passages, rang) {
 export function nommerRang(rang) {
   const n = rang + 1;
   return n === 1 ? '1ᵉʳ passage' : `${n}ᵉ passage`;
+}
+
+/**
+ * La cause d'une coupe, en toutes lettres : « 0,9 s de silence ».
+ *
+ * Ce que l'écart dit pendant qu'il s'ouvre. La durée est celle qu'on a
+ * **entendue**, pas celle qu'on voit entre deux bornes : la coupe tombe au
+ * milieu du silence, donc les passages se suivent sans trou, et l'écart visible
+ * n'est pas l'écart entendu. Rien à dire quand rien n'a été mesuré — un texte,
+ * un média d'avant la mesure — ou quand la mesure est absurde : on ne fabrique
+ * pas une cause.
+ *
+ * @param {number|undefined} secondes
+ * @param {{court?:boolean}} [opts] `court` : « 0,9 s » seul, là où la place
+ *   manque — entre deux images d'une vidéo, l'écart fait six pixels.
+ * @returns {string|null}
+ */
+export function direLeSilence(secondes, opts = {}) {
+  if (typeof secondes !== 'number' || !Number.isFinite(secondes) || secondes <= 0) return null;
+  const dixiemes = Math.round(secondes * 10);
+  if (dixiemes === 0) return null;
+  const entier = Math.floor(dixiemes / 10);
+  const reste = dixiemes % 10;
+  const nombre = reste === 0 ? String(entier) : `${entier},${reste}`;
+  return opts.court ? `${nombre} s` : `${nombre} s de silence`;
 }
 
 /**

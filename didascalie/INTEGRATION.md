@@ -229,7 +229,7 @@ Le détail, les mesures et les leçons sont dans `NOTES-CLAUDE.md` de
 ### Pour reprendre sur une autre machine
 
 ```
-git clone https://github.com/AlexGanay-wq/Ruth-Van-Coiffure   # branche claude/dazzling-archimedes-dnls5a
+git clone https://github.com/AlexGanay-wq/Ruth-Van-Coiffure   # branche claude/practical-maxwell-oe36sh (le 16/09 ; la veille : claude/dazzling-archimedes-dnls5a)
 cd Ruth-Van-Coiffure/didascalie && npm test && npm run typecheck && npm run demo
 ```
 
@@ -237,3 +237,78 @@ La démo publiée reste à <https://claude.ai/artifact/SKL4FHJxtjwwXGHMtG6SjS>.
 Ce dossier a vocation à être déposé **dans** `messagerie-app` (dossier
 `didascalie/` ou fusion module par module) quand le rond sera branché ; d'ici
 là il vit ici, et rien de l'app ne dépend de lui.
+
+---
+
+## 6. Le 16 septembre — les trois matières, une seule silhouette
+
+Sa ligne : « reprend note et dépôt et continue l'amélioration de didascalie au
+niveau de l'interface des échanges inline sms, vocaux et vidéo ». Session
+distante, dépôt de l'app attaché en lecture (`messagerie-app`, `main` à
+`0ebd607`, la passation du 15/09 au soir) pour garder la maquette fidèle à ce
+qui est en ligne. **Rien n'a été poussé dans l'app** : tout ce qui suit est dans
+le prototype, éprouvé dans Chromium (Playwright, pause-et-cherche), et attend sa
+ligne — maquette toujours avant de déployer.
+
+### Ce qui a été fait, et où
+
+| Quoi | Où | Ce que ça change |
+|---|---|---|
+| Le rond et les trois portes sur un **vocal** | `demo/app.js` (`rendreRail`, `rangeeDePassage`) | chaque bande a son rond à gauche ; « d'accord », « je te réponds bientôt », « Répondre » s'ouvrent dessous ; la réponse s'accroche **sous sa bande**, pas après le lecteur |
+| … et sur une **vidéo** | `rendreVignettes`, `rendreSuiteVideo` | une rangée de trois images **67 × 50**, son moment dessous, **son rond sous chaque image** ; les mots et les réponses d'un passage viennent sous la rangée, présentés par l'image du passage (`cadreMini`) et son rang |
+| La même phrase des deux côtés | `phrasePassages` (une seule copie, comme `ChatView`) | « 3 passages · touche celui auquel répondre » au-dessus des bandes et de la rangée ; le titre ne compte plus les passages une seconde fois |
+| L'annonce **cite** ce qu'elle vise | `src/address/composer.js` → `annonce()` rend `extrait` (cinq mots, `enQuelquesMots`) et `voix` | la ligne verte montre « Pain, vin, fromage. », ou l'image du passage filmé, ou les bornes du passage entendu — sur sa propre ligne, coupée avant de pousser « au fil, plutôt » |
+| « Le silence s'écarte » | `src/settings/schema.js` (`DECOUPES`), `ui/decoupe.js` (`silence`) | les temps de l'app (PAS 380 · OUVERTURE 360 · FIN 260 · MESURE 700 à l'allure de la maison) ; l'écart dit sa durée |
+| Le point devient le silence sur un média | `dialecte(nom, matiere)` dans `schema.js` | le même contrat que `decoupeAnim.js` : goutte, respiration et silence ne sont jamais traduits |
+| La pause mesurée, par passage | `passages.js` : `silence` sur le passage qui commence là ; `direLeSilence(s, {court})` | « 0,9 s de silence » dans une pile, « 0,9 s » entre deux images |
+| La découpe dans l'axe de la matière | `ui/decoupe.js` (`MATIERES`, `axe`) | les phrases et les bandes s'écartent vers le bas, les images vers la droite ; la lueur est blanche sur une image |
+| La démo fait arriver les trois matières | `MESSAGES_A_VENIR` | texte, vocal (0,9 s et 1,4 s de silence), vidéo (1,1 s et 0,7 s), à tour de rôle ; une découpe traduite **se dit** au lecteur d'écran |
+
+### Les deux défauts trouvés en jouant, et corrigés
+
+1. **L'appareil grandissait avec le fil.** `.app` avait `min-height: 100dvh` :
+   mesuré à 826 px avant tout geste, 993 après un message, sur un écran de 780.
+   Le document défilait à la place du fil, et la barre du bas dérivait sous le
+   pouce. ⇒ `height: 100dvh` (repli `100vh`) et `overflow: hidden` ; vérifié :
+   780 / 780, le fil défile seul (`ui/styles.css`).
+2. **Toucher une phrase pendant qu'un vocal joue ne tenait que seize
+   millisecondes.** L'image suivante de la lecture reposait l'adresse sur le
+   passage du vocal (règle 1 appliquée trop largement). ⇒ `Composeur._choisi` :
+   la lecture d'un **autre** message ne déplace plus une adresse désignée par
+   un doigt, jusqu'à ce qu'on touche le message qui joue, l'annonce, ou que sa
+   lecture finisse. Deux essais nommés (« R6 · toucher un passage d'un autre
+   message pendant une lecture… »).
+
+### La leçon retrouvée : la courbe vit dans l'image
+
+En pause-et-cherche sur la découpe « silence » d'un texte, le troisième rond,
+censé naître à 560 ms, était **déjà plein à 560 ms**. Cause : `easing` posé sur
+l'animation entière (un ressort en `linear()`), qui courbe le temps de toutes
+les images-clés — exactement le défaut que l'app avait mesuré le 15/09 sur la
+goutte (« la couture 0 s'ouvrait à 209 ms au lieu de 400 »). Toutes les
+animations de `ui/decoupe.js` sont désormais **linéaires**, la courbe posée sur
+l'image de départ de chaque segment. Relevé après correction (texte, silence) :
+à 100 ms un seul rond ; à 560 ms le troisième à opacité 0 ; à 900 ms les trois.
+
+### Mesures (Chromium 400 × 780, densité 2)
+
+- Zones de toucher des ronds, par `elementFromPoint` : texte **44 × 44**, vocal
+  **47 × 44**, vidéo **42 × 41** (l'image au-dessus reste sa propre cible ; avec
+  une réponse dessous, 42 × 33). Le dessin reste à 21 px.
+- Cadre d'une image de vidéo : **67 × 50**, comme l'app.
+- Zéro élément transitoire après une découpe (`.dsc-*` retirés), zéro erreur
+  console hors le certificat des polices de la session distante.
+- 76 essais, typecheck propre.
+
+### Ce qui attend sa ligne
+
+1. **Le rond sous une image de vidéo**, tel quel ou dans le coin de l'image —
+   ici il est sous l'image, à côté du moment, pour que l'image reste une cible
+   entière (deux cibles voisines qui s'étendent se volent l'une l'autre).
+2. **Le silence entre deux images** en bref (« 1,1 s ») plutôt qu'en toutes
+   lettres : six pixels d'écart ne logent pas une phrase.
+3. **La citation dans l'annonce** : cinq mots (la règle de la notification), ou
+   plus, puisqu'ici c'est le sien d'écran ?
+4. Puis, inchangé : brancher le rond, l'adresse et la pause-réponse dans
+   `messagerie-app` — les quatre questions de la section 1, la première ayant
+   sa réponse (oui, une réponse porte son rang).

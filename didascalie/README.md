@@ -8,7 +8,7 @@ s'en sert, et une démonstration jouable. Il implémente les trois planches du
 14 septembre — les trente règles, sans en négocier une seule.
 
 ```
-npm test          # 61 essais, les règles nommées une par une
+npm test          # 76 essais, les règles nommées une par une
 npm run typecheck # tsc --checkJs, sans étape de compilation
 npm run demo      # ouvre la démonstration
 ```
@@ -20,7 +20,8 @@ npm run demo      # ouvre la démonstration
 | **Idée 1** — l'adresse d'une réponse | la ligne de frappe nomme le passage **et** la voix ; jusqu'à deux personnes on les nomme, au-delà on compte |
 | **Idée 2** — le rond | trois états (vide, ambre, plein), terminal, jamais de retour en arrière ; la ligne du bas, une seule fois |
 | **Idée 3** — le doigt sur la pause | le composeur du fil devient la rangée du passage en cours ; la pause et la réponse sont le même geste |
-| **La dette du 9 septembre** | la vidéo reçue montre **trois vignettes**, plus « 3 passages · touchez pour répondre » |
+| **La dette du 9 septembre** | la vidéo reçue montre **une rangée de trois images** (67 × 50, son moment dessous — comme l'app depuis le 15/09), et la même phrase qu'un vocal : « 3 passages · touche celui auquel répondre » |
+| **Les trois matières, une silhouette** (16/09) | le rond, ses trois portes et la réponse accrochée existent sous une phrase, à côté d'une bande de vocal, sous une image de vidéo ; l'annonce **cite** ce qu'elle vise ; la découpe joue dans les trois matières, et le point y devient le silence |
 
 Et les deux familles de réglages demandées : **manières de répondre** (trois
 modes, la voix mise en avant, l'indulgence de frontière, le temps pour se
@@ -102,6 +103,40 @@ dérobée pour ce qui est sorti par la porte.
 Voir [`INTEGRATION.md`](./INTEGRATION.md) pour brancher tout ça sur l'app
 réelle, et pour les quatre questions que la passation demandait de poser au
 code.
+
+## 16 septembre — l'interface des échanges inline, sur les trois matières
+
+Sa ligne : « reprend note et dépôt et continue l'amélioration de didascalie au
+niveau de l'interface des échanges inline sms, vocaux et vidéo ».
+
+Ce qui a changé, du plus grand au plus petit — tout est joué dans la démo et
+mesuré dans Chromium (voir [`INTEGRATION.md`, section 6](./INTEGRATION.md#6-le-16-septembre--les-trois-matières-une-seule-silhouette)) :
+
+- **Le rond sur le vocal et la vidéo.** Un passage parlé ou filmé avait sa
+  bande ou sa vignette, mais pas son rond : « la même promesse, deux langues ».
+  Chaque bande de vocal a désormais son rond à gauche, chaque image de vidéo le
+  sien dessous ; les trois portes s'ouvrent au même endroit, et la réponse
+  s'accroche **sous sa bande** (vocal) ou sous la rangée, présentée par
+  l'image du passage (vidéo).
+- **L'annonce cite ce qu'elle vise.** « 2ᵉ passage » est un rang ; « Pain, vin,
+  fromage. » est une phrase. La ligne verte porte maintenant les cinq premiers
+  mots d'un passage écrit, l'image d'un passage filmé, les bornes d'un passage
+  entendu — sur une seconde ligne, qui se coupe avant de pousser « au fil, plutôt ».
+- **La découpe dans les trois matières.** « Le silence s'écarte » rejoint les
+  réglages (le quatrième mouvement de l'app), avec la durée du silence dite
+  dans l'écart — en toutes lettres dans une pile, en bref (« 1,1 s ») entre deux
+  images. Et le point, qui n'a rien à dire dans un son, y **devient** le
+  silence (`dialecte`, comme dans l'app). Le bouton de la démo fait arriver un
+  texte, un vocal, une vidéo, à tour de rôle.
+- **Deux défauts trouvés en jouant, pas en relisant.** L'appareil grandissait
+  avec le fil (le document défilait à la place du fil, la barre du bas
+  dérivait) ; et toucher une phrase d'un texte pendant qu'un vocal joue ne
+  tenait que seize millisecondes, la lecture reposant aussitôt son adresse.
+  Les deux sont corrigés, le second avec ses essais nommés.
+- **La courbe vit dans l'image, jamais sur l'animation** — la leçon de l'app du
+  15/09, retrouvée ici en pause-et-cherche : un rond censé naître à 560 ms était
+  déjà plein à 560 ms. Toutes les découpes sont désormais linéaires, la courbe
+  posée segment par segment.
 
 ## Passation du 15 septembre au soir
 

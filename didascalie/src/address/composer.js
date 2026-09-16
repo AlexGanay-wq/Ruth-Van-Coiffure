@@ -18,6 +18,7 @@
  */
 
 import { rangVise, rangBrut, nombreDePassages, nommerRang, rangSuivant } from '../model/passages.js';
+import { enQuelquesMots } from '../security/text.js';
 
 /**
  * @typedef {{kind:'fil'}} AdresseFil
@@ -99,6 +100,21 @@ export class Composeur {
      * @type {{messageId:string, rang:number}|null}
      */
     this._plancher = null;
+    /**
+     * Le message qu'un doigt a désigné **pendant qu'un autre joue**.
+     *
+     * Trouvé en jouant la démonstration le 16 septembre : un vocal joue, on
+     * touche une phrase d'un texte plus haut — et l'image suivante de la
+     * lecture repose l'adresse sur le passage du vocal. Le toucher ne tenait
+     * que seize millisecondes. La règle 1 (« le composeur suit le passage en
+     * cours ») vaut pour le message qu'on écoute ; elle n'a pas à défaire ce
+     * qu'on vient de désigner ailleurs. La lecture d'un autre message ne
+     * déplace donc plus l'adresse tant que ce choix tient — et il tient jusqu'à
+     * ce qu'on touche le message qui joue, l'annonce, ou qu'on quitte le fil.
+     *
+     * @type {string|null}
+     */
+    this._choisi = null;
     /** @type {'ecrit'|'enregistre'|'filme'|null} */
     this._voix = null;
     /** @type {Set<(a:Adresse, p:{precedente:Adresse, sens:number})=>void>} */
@@ -139,6 +155,7 @@ export class Composeur {
     this._enLecture = messageId;
     if (modeDeReponse !== ModeDeReponse.PAUSE_REPOND) return;
     if (this._refuseLaLecture) return;
+    if (this._choisi !== null && this._choisi !== messageId) return;
 
     const msg = this._message(messageId);
     const n = nombreDePassages(msg);
@@ -179,6 +196,9 @@ export class Composeur {
     const msg = this._message(messageId);
     const n = nombreDePassages(msg);
     if (n === 0) return;
+    // Un doigt sur le message qui joue rend la main à la lecture ; un doigt
+    // ailleurs la lui retire, le temps de répondre là où l'on a désigné.
+    this._choisi = this._enLecture !== null && this._enLecture !== messageId ? messageId : null;
     if (n === 1) {
       this._poser({ kind: 'message', messageId });
       return;
@@ -197,6 +217,7 @@ export class Composeur {
   toucherAnnonce() {
     // Le loquet ne vaut que tant que la lecture pourrait reposer une adresse.
     this._refuseLaLecture = this._enLecture !== null;
+    this._choisi = null;
     this._poser(AU_FIL);
   }
 
@@ -210,7 +231,12 @@ export class Composeur {
    * @param {string} messageId
    */
   finDeLecture(messageId) {
-    if (this._enLecture === messageId) this._enLecture = null;
+    if (this._enLecture === messageId) {
+      this._enLecture = null;
+      // Ce qui motivait le choix d'un autre message n'existe plus : la
+      // prochaine lecture repart avec ses droits.
+      this._choisi = null;
+    }
     const a = this._adresse;
     if (a.kind === 'passage' && a.messageId === messageId && a.raison !== 'fin') {
       this._poser({ ...a, raison: 'fin' });
@@ -223,8 +249,12 @@ export class Composeur {
    * @param {string} messageId
    */
   quitterMessage(messageId) {
-    if (this._enLecture === messageId) this._enLecture = null;
+    if (this._enLecture === messageId) {
+      this._enLecture = null;
+      this._choisi = null;
+    }
     this._refuseLaLecture = false;
+    if (this._choisi === messageId) this._choisi = null;
     if (this._plancher && this._plancher.messageId === messageId) this._plancher = null;
     const a = this._adresse;
     if (a.kind !== 'fil' && a.messageId === messageId) this._poser(AU_FIL);
@@ -235,6 +265,7 @@ export class Composeur {
     this._enLecture = null;
     this._voix = null;
     this._refuseLaLecture = false;
+    this._choisi = null;
     this._plancher = null;
     this._poser(AU_FIL);
   }
@@ -303,23 +334,34 @@ export class Composeur {
    * vide quand l'adresse est inline — et que les réglages n'offrent pas de
    * « ne rien annoncer » : ils choisissent la *longueur*, pas l'existence.
    *
+   * Elle cite aussi **ce qu'elle vise**, pas seulement son rang : `extrait`
+   * porte les premiers mots d'un passage écrit (cinq au plus — ce sont les
+   * mots de l'autre, et l'écran peut être lu par-dessus l'épaule), et `voix` la
+   * matière du message, pour que l'interface montre l'image d'un passage filmé
+   * ou les bornes d'un passage parlé. « 2ᵉ passage » est un rang ; « Pain, vin,
+   * fromage. » est une phrase, et c'est à une phrase qu'on répond.
+   *
    * @param {{compacte?:boolean}} [opts]
-   * @returns {{texte:string, sortie:boolean, rang:number}|null} null = au fil
+   * @returns {{texte:string, sortie:boolean, rang:number, extrait:string|null, voix:string|null}|null} null = au fil
    */
   annonce(opts = {}) {
     const a = this._adresse;
     if (a.kind === 'fil') return null;
 
+    const msg = this._message(a.messageId);
+    const voix = msg ? msg.voix : null;
+
     if (a.kind === 'message') {
-      return { texte: 'ta réponse ira à ce message', sortie: true, rang: -1 };
+      const seul = msg && msg.passages[0];
+      return { texte: 'ta réponse ira à ce message', sortie: true, rang: -1, extrait: extraitDe(seul), voix };
     }
 
-    const msg = this._message(a.messageId);
     const p = msg && msg.passages[a.rang];
     const nom = nommerRang(a.rang);
+    const extrait = extraitDe(p);
 
     if (opts.compacte) {
-      return { texte: `↩ ${nom}`, sortie: true, rang: a.rang };
+      return { texte: `↩ ${nom}`, sortie: true, rang: a.rang, extrait, voix };
     }
 
     let texte = `ta réponse ira au ${nom}`;
@@ -328,7 +370,7 @@ export class Composeur {
     } else if (a.raison === 'fin') {
       texte += ' — le dernier entendu';
     }
-    return { texte, sortie: true, rang: a.rang };
+    return { texte, sortie: true, rang: a.rang, extrait, voix };
   }
 
   // ── Interne ───────────────────────────────────────────────────────────────
@@ -357,6 +399,13 @@ export class Composeur {
     this._ecoutes.add(f);
     return () => this._ecoutes.delete(f);
   }
+}
+
+/** Les premiers mots d'un passage écrit, ou rien : un son n'a pas d'extrait. */
+function extraitDe(p) {
+  if (!p || typeof p.texte !== 'string') return null;
+  const e = enQuelquesMots(p.texte);
+  return e || null;
 }
 
 /** La raison n'existe que sur une adresse de passage ; ailleurs, il n'y en a pas. */

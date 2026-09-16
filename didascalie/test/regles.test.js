@@ -14,12 +14,12 @@ import assert from 'node:assert/strict';
 
 import { Etat, join, estTerminal } from '../src/kernel/lattice.js';
 import { RegistreDesRonds } from '../src/model/ring.js';
-import { rangVise, rangBrut, nommerRang, rangSuivant, porteDesRonds } from '../src/model/passages.js';
+import { rangVise, rangBrut, nommerRang, rangSuivant, porteDesRonds, direLeSilence } from '../src/model/passages.js';
 import { Composeur, ModeDeReponse, memeAdresse } from '../src/address/composer.js';
 import { nettoyer, contenaitDuCache, enQuelquesMots } from '../src/security/text.js';
 import { rangDeConfiance, laPorte, identifiant } from '../src/security/gate.js';
 import { Annonceur, lireLesFrappes } from '../src/transport/presence.js';
-import { valider } from '../src/settings/schema.js';
+import { valider, dialecte, DECOUPES, MATIERES } from '../src/settings/schema.js';
 import { verifier } from '../src/motion/engine.js';
 import * as CHORE from '../src/motion/choreography.js';
 import { allure, doser, ALLURES, ressort } from '../src/motion/presets.js';
@@ -35,11 +35,19 @@ const SEUL = Object.freeze({
   passages: [{ debut: 0, fin: 0, texte: 'Je pars dans dix minutes.' }],
 });
 const SANS_DECOUPE = Object.freeze({ id: 'a1', voix: 'texte', auteurId: 'testeur', passages: [] });
+const TEXTE = Object.freeze({
+  id: 't1', voix: 'texte', auteurId: 'testeur',
+  passages: [
+    { debut: 0, fin: 0, texte: 'Voilà ce que je prends pour samedi.' },
+    { debut: 0, fin: 0, texte: 'Pain, vin, fromage.' },
+    { debut: 0, fin: 0, texte: 'Tu peux t’occuper du dessert ?' },
+  ],
+});
 
 function composeur(reglages = {}) {
   let r = { modeDeReponse: ModeDeReponse.PAUSE_REPOND, graceFrontiereMs: 1500, ...reglages };
   const c = new Composeur({
-    message: (id) => ({ v1: VOCAL, s1: SEUL, a1: SANS_DECOUPE }[id] ?? null),
+    message: (id) => ({ v1: VOCAL, s1: SEUL, a1: SANS_DECOUPE, t1: TEXTE }[id] ?? null),
     reglages: () => r,
   });
   return { c, regler: (x) => { r = { ...r, ...x }; } };
@@ -232,6 +240,32 @@ describe('Idée 3 — « Le doigt sur la pause » : l’adresse', () => {
     assert.equal(c.annonce(), null);
   });
 
+  test('R6 · toucher un passage d’un autre message pendant une lecture : la lecture ne le reprend pas', () => {
+    const { c } = composeur();
+    c.lecture('v1', 5);
+    c.toucherPassage('t1', 1);
+    assert.equal(c.adresse.messageId, 't1');
+    c.lecture('v1', 5.1);
+    c.lecture('v1', 20);
+    assert.equal(c.adresse.messageId, 't1', 'l’image suivante de la lecture ne repose pas le vocal');
+    assert.equal(cible(c), 1);
+    // Retoucher le message qui joue lui rend la main.
+    c.toucherPassage('v1', 2);
+    c.lecture('v1', 30);
+    assert.equal(cible(c), 2);
+    c.lecture('v1', 5);
+    assert.equal(cible(c), 0, 'la lecture suit à nouveau');
+  });
+
+  test('R6 · quitter le message qui jouait rend la lecture suivante à son droit', () => {
+    const { c } = composeur();
+    c.lecture('v1', 5);
+    c.toucherPassage('t1', 0);
+    c.quitterMessage('v1');
+    c.lecture('v1', 20);
+    assert.equal(cible(c), 1, 'un nouveau départ de lecture reprend la main');
+  });
+
   test('R7 · retoucher un passage lève le loquet', () => {
     const { c } = composeur();
     c.lecture('v1', 20);
@@ -263,6 +297,32 @@ describe('Idée 3 — « Le doigt sur la pause » : l’adresse', () => {
     c.toucherPassage('s1', 0);
     assert.equal(cible(c), 'message');
     assert.match(c.annonce().texte, /ce message/);
+  });
+
+  test('R2 · l’annonce cite ce qu’elle vise : les mots d’un passage écrit, cinq au plus', () => {
+    const { c } = composeur();
+    c.toucherPassage('t1', 1);
+    const a = c.annonce();
+    assert.equal(a.extrait, 'Pain, vin, fromage.');
+    assert.equal(a.voix, 'texte');
+    c.toucherPassage('t1', 2);
+    assert.equal(c.annonce().extrait, 'Tu peux t’occuper du dessert…', 'jamais plus de cinq mots');
+    assert.equal(c.annonce({ compacte: true }).extrait, 'Tu peux t’occuper du dessert…', 'l’annonce courte cite aussi');
+  });
+
+  test('R2 · un passage parlé n’a pas d’extrait, mais dit sa matière', () => {
+    const { c } = composeur();
+    c.lecture('v1', 20);
+    const a = c.annonce();
+    assert.equal(a.extrait, null);
+    assert.equal(a.voix, 'vocal');
+    assert.match(a.texte, /0:14 → 0:28/);
+  });
+
+  test('R9 · le message d’un seul passage cite sa phrase', () => {
+    const { c } = composeur();
+    c.toucherPassage('s1', 0);
+    assert.equal(c.annonce().extrait, 'Je pars dans dix minutes.');
   });
 
   test('R9 · un message sans découpe ne vise rien du tout', () => {
@@ -494,6 +554,30 @@ describe('Réglages et animation', () => {
   test('les cinq allures sont proposées, « Aucune » comprise', () => {
     assert.deepEqual(Object.keys(ALLURES), ['didascalie', 'sobre', 'ample', 'papier', 'aucune']);
   });
+
+  test('quatre découpes, la goutte en tête, le silence en dernier', () => {
+    assert.deepEqual(DECOUPES.map((d) => d.id), ['goutte', 'point', 'respiration', 'silence']);
+    assert.equal(valider({ decoupe: 'silence' }).decoupe, 'silence');
+  });
+
+  test('le point n’a rien à dire dans un son : sur un média, il devient le silence', () => {
+    assert.equal(dialecte('point', 'texte'), 'point');
+    assert.equal(dialecte('point', 'vocal'), 'silence');
+    assert.equal(dialecte('point', 'video'), 'silence');
+  });
+
+  test('la goutte, la respiration et le silence disent vrai partout : jamais traduits', () => {
+    for (const m of MATIERES) {
+      assert.equal(dialecte('goutte', m), 'goutte', m);
+      assert.equal(dialecte('respiration', m), 'respiration', m);
+      assert.equal(dialecte('silence', m), 'silence', m);
+    }
+  });
+
+  test('une découpe inconnue ou une matière inconnue retombent sans casser', () => {
+    assert.equal(dialecte('pirate', 'vocal'), 'goutte');
+    assert.equal(dialecte('point', 'hologramme'), 'point');
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -513,6 +597,20 @@ describe('Détails qui mordent', () => {
     assert.equal(rangBrut(p, 41), -1, 'la fin est exclusive');
     assert.equal(rangBrut(p, -1), -1);
     assert.equal(rangBrut(p, NaN), -1);
+  });
+
+  test('l’écart dit sa cause en français : « 0,9 s de silence »', () => {
+    assert.equal(direLeSilence(0.9), '0,9 s de silence');
+    assert.equal(direLeSilence(1.4), '1,4 s de silence');
+    assert.equal(direLeSilence(2), '2 s de silence');
+    assert.equal(direLeSilence(0.96), '1 s de silence', 'arrondi au dixième, sans « 1,0 »');
+    assert.equal(direLeSilence(1.1, { court: true }), '1,1 s', 'la forme courte, entre deux images');
+  });
+
+  test('sans mesure, l’écart ne fabrique pas une cause', () => {
+    for (const rien of [undefined, null, 0, -1, NaN, Infinity, '0,9', 0.04]) {
+      assert.equal(direLeSilence(/** @type {any} */ (rien)), null, String(rien));
+    }
   });
 
   test('rangSuivant s’arrête au bout', () => {

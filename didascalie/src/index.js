@@ -15,7 +15,7 @@ export { Metronome, metronome } from './kernel/ticker.js';
 export { RegistreDesRonds } from './model/ring.js';
 export {
   rangBrut, rangVise, rangSuivant, nommerRang, bornes,
-  porteDesRonds, nombreDePassages,
+  porteDesRonds, nombreDePassages, direLeSilence,
 } from './model/passages.js';
 
 export { Composeur, ModeDeReponse, memeAdresse } from './address/composer.js';
@@ -29,4 +29,4 @@ export { rangDeConfiance, laPorte, identifiant } from './security/gate.js';
 
 export { Annonceur, lireLesFrappes, PEREMPTION_MS } from './transport/presence.js';
 
-export { DEFAUTS, valider, FORMULAIRE } from './settings/schema.js';
+export { DEFAUTS, valider, FORMULAIRE, DECOUPES, MATIERES, dialecte } from './settings/schema.js';
