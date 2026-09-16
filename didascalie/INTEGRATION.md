@@ -309,6 +309,14 @@ l'image de départ de chaque segment. Relevé après correction (texte, silence)
    lettres : six pixels d'écart ne logent pas une phrase.
 3. **La citation dans l'annonce** : cinq mots (la règle de la notification), ou
    plus, puisqu'ici c'est le sien d'écran ?
-4. Puis, inchangé : brancher le rond, l'adresse et la pause-réponse dans
-   `messagerie-app` — les quatre questions de la section 1, la première ayant
-   sa réponse (oui, une réponse porte son rang).
+4. ~~Puis, inchangé : brancher le rond, l'adresse et la pause-réponse dans
+   `messagerie-app`~~ — **fait le même jour, sur sa ligne** (« branche le rond,
+   l'adresse et la pause-réponse dans messagerie-app ») : branche
+   `claude/rond-adresse-pause` de `messagerie-app`, `main` intact, 70 harnais au
+   vert, ChatView éprouvé seul dans Chromium. Le détail, les décisions à valider
+   et le banc sont en tête de `NOTES-CLAUDE.md` là-bas (section du 16/09).
+   Ce qui y est passé : `rond.js` (l'état calculé depuis `segments[].replies`,
+   aucun champ réseau), `adresse.js` (ce `Composeur`, porté essai pour essai,
+   sur des passages `{tStart, tEnd}`), `frappe.js` (`typing.{uid}.ou =
+   passage:<id>:<rang>:<voix>`), `Rond.jsx`, et trois réglages. Ce dossier
+   reste le prototype des règles ; l'app a maintenant les siennes.
